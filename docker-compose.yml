@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  api:
+    build: ./backend
+    container_name: infrareport_api
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/storage:/app/storage
+    restart: unless-stopped
+    # Expõe a porta para facilitar testes locais independentes.
+    # Em prod, o nginx acessará diretamente via rede docker (porta 8000 exposta pelo Dockerfile)
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend-react
+    container_name: infrareport_frontend
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+    restart: unless-stopped

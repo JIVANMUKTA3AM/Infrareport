@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InfraReport — Dashboard Financeiro</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:        #F8FAFC;
+  --bg2:       #FFFFFF;
+  --bg3:       #EFF4FF;
+  --sidebar:   #1E40AF;
+  --sidebar2:  #1633A0;
+  --primary:   #1E40AF;
+  --accent:    #3B82F6;
+  --accent2:   #60A5FA;
+  --success:   #059669;
+  --success-bg:#ECFDF5;
+  --danger:    #DC2626;
+  --danger-bg: #FEF2F2;
+  --warn:      #D97706;
+  --warn-bg:   #FFFBEB;
+  --text:      #0F172A;
+  --text2:     #475569;
+  --text3:     #94A3B8;
+  --border:    #E2E8F0;
+  --border2:   #CBD5E1;
+  --shadow:    0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(30,64,175,0.06);
+  --shadow-lg: 0 8px 32px rgba(30,64,175,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  box-shadow: 4px 0 24px rgba(30,64,175,0.18);
+}
+
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.logo-mark {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.logo-mark span { color: var(--accent2); }
+.logo-sub {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.sidebar-user {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.user-avatar {
+  width: 36px; height: 36px;
+  background: rgba(96,165,250,0.25);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.user-name { font-size: 0.82rem; font-weight: 600; color: #fff; }
+.user-plan { font-size: 0.68rem; color: rgba(255,255,255,0.45); }
+
+nav { flex: 1; padding: 16px 0; }
+.nav-section {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  padding: 14px 24px 6px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  transition: all 0.18s;
+  border-left: 3px solid transparent;
+  text-decoration: none;
+}
+.nav-item:hover { color: #fff; background: rgba(255,255,255,0.07); }
+.nav-item.active {
+  color: #fff;
+  background: rgba(96,165,250,0.15);
+  border-left-color: var(--accent2);
+  font-weight: 600;
+}
+.nav-icon { width: 16px; text-align: center; font-size: 0.9rem; }
+
+.sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ── MAIN ── */
+.main {
+  margin-left: 240px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-left h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.topbar-left p {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 1px;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.period-selector {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.period-btn {
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.period-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-export {
+  padding: 7px 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s;
+}
+.btn-export:hover { background: var(--sidebar2); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+
+/* ── CONTENT ── */
+.content {
+  padding: 28px 32px;
+  flex: 1;
+}
+
+/* ── KPI CARDS ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.kpi-card.blue::before   { background: var(--accent); }
+.kpi-card.green::before  { background: var(--success); }
+.kpi-card.red::before    { background: var(--danger); }
+.kpi-card.gold::before   { background: var(--warn); }
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.kpi-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.kpi-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.kpi-icon.blue  { background: var(--bg3); }
+.kpi-icon.green { background: var(--success-bg); }
+.kpi-icon.red   { background: var(--danger-bg); }
+.kpi-icon.gold  { background: var(--warn-bg); }
+
+.kpi-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.kpi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.kpi-badge.up   { background: var(--success-bg); color: var(--success); }
+.kpi-badge.down { background: var(--danger-bg);  color: var(--danger); }
+.kpi-badge.neu  { background: var(--bg3);         color: var(--text2); }
+
+/* ── CHARTS ROW ── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.charts-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: var(--shadow);
+}
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+.chart-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.chart-sub {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+.chart-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--bg3);
+  color: var(--accent);
+}
+
+/* ── HIGHLIGHTS ── */
+.highlights-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.highlight-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+.highlight-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.highlight-title span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.highlight-title span.g { background: var(--success); }
+.highlight-title span.r { background: var(--danger); }
+
+.highlight-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.highlight-item:last-child { border-bottom: none; padding-bottom: 0; }
+.hi-left { display: flex; align-items: center; gap: 10px; }
+.hi-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.hi-name { font-size: 0.82rem; font-weight: 500; color: var(--text); }
+.hi-desc { font-size: 0.7rem; color: var(--text3); }
+.hi-value { font-size: 0.9rem; font-weight: 700; }
+.hi-value.pos { color: var(--success); }
+.hi-value.neg { color: var(--danger); }
+
+/* ── PROJECTS TABLE ── */
+.table-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.table-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.table-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 10px 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  background: var(--bg);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg3); }
+tbody td {
+  padding: 13px 20px;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+.td-project { font-weight: 600; }
+.td-rec  { color: var(--success); font-weight: 600; }
+.td-cost { color: var(--danger);  font-weight: 600; }
+.td-profit { font-weight: 700; }
+.td-profit.pos { color: var(--primary); }
+.td-profit.neg { color: var(--danger); }
+
+.margin-bar-wrap { display: flex; align-items: center; gap: 10px; }
+.margin-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.margin-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--primary));
+  transition: width 1s ease;
+}
+.margin-pct { font-size: 0.75rem; font-weight: 700; color: var(--primary); min-width: 38px; text-align: right; }
+
+/* ── ANIMATE ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-card  { animation: fadeUp 0.5s ease both; }
+.kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.kpi-card:nth-child(2) { animation-delay: 0.1s; }
+.kpi-card:nth-child(3) { animation-delay: 0.15s; }
+.kpi-card:nth-child(4) { animation-delay: 0.2s; }
+.chart-card { animation: fadeUp 0.5s 0.25s ease both; }
+.table-card { animation: fadeUp 0.5s 0.35s ease both; }
+
+/* ── NAV BADGE ── */
+.nav-badge {
+  margin-left: auto;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(96,165,250,0.25);
+  color: var(--accent2);
+  letter-spacing: 0.04em;
+}
+
+/* ── PAGES ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── CHAT PAGE ── */
+.chat-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  height: calc(100vh - 60px - 56px);
+  max-height: 780px;
+}
+
+.chat-main {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.chat-topbar {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg2);
+}
+.agent-avatar {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.agent-info { flex: 1; }
+.agent-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.agent-status {
+  font-size: 0.7rem;
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.agent-status::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 50% { opacity: 0.4; } }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.msg-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  animation: fadeUp 0.3s ease;
+}
+.msg-row.user { flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.msg-avatar.bot { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; }
+.msg-avatar.usr { background: var(--bg3); color: var(--primary); }
+
+.msg-bubble {
+  max-width: 72%;
+  padding: 11px 15px;
+  border-radius: 12px;
+  font-size: 0.83rem;
+  line-height: 1.6;
+}
+.msg-bubble.bot {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.msg-bubble.user {
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.msg-time {
+  font-size: 0.65rem;
+  color: var(--text3);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+.msg-row.user .msg-time { text-align: right; }
+
+.msg-bubble.bot strong { color: var(--primary); }
+.msg-bubble.bot .data-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 4px 2px;
+}
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  width: fit-content;
+}
+.typing-indicator span {
+  width: 6px; height: 6px;
+  background: var(--text3);
+  border-radius: 50%;
+  animation: typeDot 1.2s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typeDot { 0%,80%,100%{transform:scale(0.7);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
+.chat-input-area {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+}
+.chat-suggestions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.suggestion-chip {
+  font-size: 0.72rem;
+  padding: 5px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--primary);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.suggestion-chip:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.chat-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  resize: none;
+  outline: none;
+  min-height: 42px;
+  max-height: 100px;
+  transition: border-color 0.15s;
+  line-height: 1.5;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-input::placeholder { color: var(--text3); }
+
+.btn-send {
+  width: 42px; height: 42px;
+  background: var(--primary);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.18s;
+  font-size: 1rem;
+}
+.btn-send:hover { background: var(--sidebar2); transform: scale(1.05); }
+.btn-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── CHAT SIDEBAR ── */
+.chat-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chat-info-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.chat-info-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+.quick-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+.quick-stat:last-child { border-bottom: none; padding-bottom: 0; }
+.qs-label { color: var(--text2); }
+.qs-value { font-weight: 700; color: var(--text); }
+.qs-value.g { color: var(--success); }
+.qs-value.r { color: var(--danger); }
+.qs-value.b { color: var(--primary); }
+
+.cmd-list { display: flex; flex-direction: column; gap: 6px; }
+.cmd-item {
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+.cmd-item:hover { background: var(--bg3); border-color: var(--accent); color: var(--primary); }
+.cmd-item strong { color: var(--primary); display: block; font-size: 0.7rem; margin-bottom: 2px; }
+
+.whats-promo {
+  background: linear-gradient(135deg, #1E40AF, #3B82F6);
+  border-radius: 12px;
+  padding: 18px;
+  color: #fff;
+}
+.whats-promo h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.whats-promo p {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.btn-upgrade {
+  width: 100%;
+  padding: 8px;
+  background: #fff;
+  color: var(--primary);
+  border: none;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: opacity 0.15s;
+}
+.btn-upgrade:hover { opacity: 0.9; }
+
+/* ── PROPOSTAS PAGE ── */
+.prop-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  min-height: calc(100vh - 120px);
+}
+
+/* Agente lateral */
+.prop-agent-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agent-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  height: 580px;
+}
+
+.agent-card-header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.agent-card-avatar {
+  width: 40px; height: 40px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.agent-card-name { font-size: 0.88rem; font-weight: 700; color: #fff; }
+.agent-card-status {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.agent-card-status::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: #4ADE80;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+.agent-card-badge {
+  margin-left: auto;
+  font-size: 0.62rem;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.prop-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-behavior: smooth;
+}
+.prop-chat-messages::-webkit-scrollbar { width: 4px; }
+.prop-chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.prop-input-area {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.prop-suggestions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.prop-chip {
+  font-size: 0.68rem;
+  padding: 4px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--primary);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.prop-chip:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Propostas lista */
+.prop-list-col { display: flex; flex-direction: column; gap: 16px; }
+
+.prop-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.prop-kpi {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.prop-kpi-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.prop-kpi-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.prop-kpi-value.b { color: var(--primary); }
+.prop-kpi-value.g { color: var(--success); }
+.prop-kpi-value.o { color: var(--warn); }
+.prop-kpi-value.r { color: var(--danger); }
+
+.prop-list-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.prop-list-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.prop-list-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.prop-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.prop-filter-btn {
+  font-size: 0.7rem;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.prop-filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.prop-filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--primary); }
+
+.prop-item {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+.prop-item:last-child { border-bottom: none; }
+.prop-item:hover { background: var(--bg3); }
+
+.prop-item-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.prop-item-body { flex: 1; min-width: 0; }
+.prop-item-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prop-item-desc {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.prop-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.prop-item-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.prop-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+}
+.prop-status.enviada    { background: var(--bg3);       color: var(--primary); }
+.prop-status.aprovada   { background: var(--success-bg); color: var(--success); }
+.prop-status.pendente   { background: var(--warn-bg);    color: var(--warn); }
+.prop-status.rejeitada  { background: var(--danger-bg);  color: var(--danger); }
+.prop-status.gerando    { background: #F5F3FF;           color: #7C3AED; }
+
+.prop-item-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.prop-action-btn {
+  font-size: 0.65rem;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all 0.15s;
+}
+.prop-action-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+.prop-action-btn.approve { background: var(--success-bg); color: var(--success); border-color: rgba(5,150,105,0.2); }
+.prop-action-btn.approve:hover { background: var(--success); color: #fff; }
+
+@media print {
+  .sidebar, .topbar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 0; }
+  body { background: #fff; }
+  .kpi-card, .chart-card, .table-card, .highlight-card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">Infra<span>Report</span></div>
+    <div class="logo-sub">Gestão Técnica</div>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">EA</div>
+    <div>
+      <div class="user-name">Eng. Carlos Silva</div>
+      <div class="user-plan">Plano Pro</div>
+    </div>
+  </div>
+
+  <nav>
+    <div class="nav-section">Principal</div>
+    <a class="nav-item active" href="#dashboard" id="navDashboard" onclick="navigate('dashboard');return false;">
+      <span class="nav-icon">📊</span> Dashboard Financeiro
+    </a>
+    <a class="nav-item" href="#propostas" id="navPropostas" onclick="navigate('propostas');return false;">
+      <span class="nav-icon">📄</span> Propostas
+    </a>
+    <a class="nav-item" href="#projetos" id="navProjetos" onclick="navigate('projetos');return false;">
+      <span class="nav-icon">🏗️</span> Projetos / OS
+    </a>
+    <a class="nav-item" href="#agenda" id="navAgenda" onclick="navigate('agenda');return false;">
+      <span class="nav-icon">📅</span> Agenda
+    </a>
+
+    <div class="nav-section">Financeiro</div>
+    <a class="nav-item" href="#entradas" id="navEntradas" onclick="navigate('entradas');return false;">
+      <span class="nav-icon">📥</span> Entradas
+    </a>
+    <a class="nav-item" href="#saidas" id="navSaidas" onclick="navigate('saidas');return false;">
+      <span class="nav-icon">📤</span> Saídas
+    </a>
+    <a class="nav-item" href="#categorias" id="navCategorias" onclick="navigate('categorias');return false;">
+      <span class="nav-icon">📋</span> Categorias
+    </a>
+    <a class="nav-item" href="#relatorios" id="navRelatorios" onclick="navigate('relatorios');return false;">
+      <span class="nav-icon">📑</span> Relatórios
+    </a>
+
+    <div class="nav-section">Agente IA</div>
+    <a class="nav-item" href="#chat" id="navChat" onclick="navigate('chat');return false;">
+      <span class="nav-icon">🤖</span> Chat com Agente
+      <span class="nav-badge">Pro</span>
+    </a>
+
+    <div class="nav-section">Conta</div>
+    <a class="nav-item" href="#configuracoes" id="navConfiguracoes" onclick="navigate('configuracoes');return false;">
+      <span class="nav-icon">⚙️</span> Configurações
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-icon">🚪</span> Sair
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">v1.0 · InfraReport © 2025</div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1>Dashboard Financeiro</h1>
+      <p>Atualizado em tempo real · Março 2025</p>
+    </div>
+    <div class="topbar-right">
+      <div class="period-selector">
+        <button class="period-btn">Jan</button>
+        <button class="period-btn">Fev</button>
+        <button class="period-btn active">Mar</button>
+        <button class="period-btn">Abr</button>
+        <button class="period-btn">Ano</button>
+      </div>
+      <button class="btn-export" onclick="window.print()">⬇ Exportar PDF</button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+  <!-- PAGE: DASHBOARD -->
+  <div id="pageDashboard" class="page active">
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-header">
+          <div class="kpi-label">Total Entradas</div>
+          <div class="kpi-icon green">💰</div>
+        </div>
+        <div class="kpi-value">R$ 9.570</div>
+        <span class="kpi-badge up">▲ 18,4% vs fev</span>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-header">
+          <div class="kpi-label">Total Saídas</div>
+          <div class="kpi-icon red">📤</div>
+        </div>
+        <div class="kpi-value">R$ 1.966</div>
+        <span class="kpi-badge down">▲ 12,1% vs fev</span>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-header">
+          <div class="kpi-label">Saldo do Mês</div>
+          <div class="kpi-icon blue">📈</div>
+        </div>
+        <div class="kpi-value">R$ 7.604</div>
+        <span class="kpi-badge up">▲ 20,2% vs fev</span>
+      </div>
+      <div class="kpi-card gold">
+        <div class="kpi-header">
+          <div class="kpi-label">Saldo Acumulado</div>
+          <div class="kpi-icon gold">🏦</div>
+        </div>
+        <div class="kpi-value">R$ 23.840</div>
+        <span class="kpi-badge neu">↗ ano corrente</span>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW 1 -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Entradas vs Saídas por Mês</div>
+            <div class="chart-sub">Comparativo mensal — 2025</div>
+          </div>
+          <span class="chart-tag">2025</span>
+        </div>
+        <canvas id="barChart" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Evolução do Saldo</div>
+            <div class="chart-sub">Acumulado mês a mês</div>
+          </div>
+          <span class="chart-tag">Linha</span>
+        </div>
+        <canvas id="lineChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW 2 -->
+    <div class="charts-row-2">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Entradas por Tipo</div>
+            <div class="chart-sub">Distribuição das receitas</div>
+          </div>
+        </div>
+        <canvas id="donutEntradas" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Saídas por Categoria</div>
+            <div class="chart-sub">Onde o dinheiro foi</div>
+          </div>
+        </div>
+        <canvas id="donutSaidas" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Margem por Projeto</div>
+            <div class="chart-sub">Lucro líquido % por cliente</div>
+          </div>
+        </div>
+        <canvas id="barMargem" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- DESTAQUES -->
+    <div class="highlights-row">
+      <div class="highlight-card">
+        <div class="highlight-title">
+          <span class="g"></span> Maiores Entradas do Mês
+        </div>
+        <div class="highlight-item">
+          <div class="hi-left">
+            <div class="hi-dot" style="background:#3B82F6"></div>
+            <div>
+              <div class="hi-name">Instalação CFTV — 8 câmeras</div>
+              <div class="hi-desc">Supermercado Beta · Serviço Técnico</div>
+            </div>
+          </div>
+          <div class="hi-value pos">R$ 4.500</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-left">
+            <div class="hi-dot" style="background:#60A5FA"></div>
+            <div>
+              <div class="hi-name">Manutenção preventiva Split 18k</div>
+              <div class="hi-desc">Construtora Alfa · Serviço Técnico</div>
+            </div>
+          </div>
+          <div class="hi-value pos">R$ 2.840</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-left">
+            <div class="hi-dot" style="background:#93C5FD"></div>
+            <div>
+              <div class="hi-name">Contrato manutenção mensal</div>
+              <div class="hi-desc">Escritório Delta · Contrato Recorrente</div>
+            </div>
+          </div>
+          <div class="hi-value pos">R$ 1.200</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-left">
+            <div class="hi-dot" style="background:#BFDBFE"></div>
+            <div>
+              <div class="hi-name">Venda material — tubulação AC</div>
+              <div class="hi-desc">Cliente Avulso · Venda Material</div>
+            </div>
+          </div>
+          <div class="hi-value pos">R$ 680</div>
+        </div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="highlight-title">
+          <span class="r"></span> Maiores Saídas do Mês
+        </div>
+        <div class="highlight-item">
+          <div class="hi-left">
+            <div class="hi-dot" style="background:#DC2626"></div>
+            <div>
+              <div class="hi-name">Cabo CFTV 300m</div>
+              <div class="hi-desc">Supermercado Beta · Material</div>
+            </div>
+          </div>
+          <div class="hi-value neg">R$ 520</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-left">
+            <div class="hi-dot" style="background:#EF4444"></div>
+            <div>
+              <div class="hi-name">Ferramentas — multímetro</div>
+              <div class="hi-desc">Próprio · Equipamento</div>
+            </div>
+          </div>
+          <div class="hi-value neg">R$ 340</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-left">
+            <div class="hi-dot" style="background:#FCA5A5"></div>
+            <div>
+              <div class="hi-name">Material — tubos cobre 1/2"</div>
+              <div class="hi-desc">Construtora Alfa · Material</div>
+            </div>
+          </div>
+          <div class="hi-value neg">R$ 386</div>
+        </div>
+        <div class="highlight-item">
+          <div class="hi-left">
+            <div class="hi-dot" style="background:#FECACA"></div>
+            <div>
+              <div class="hi-name">Gás R410A — recarga</div>
+              <div class="hi-desc">Residencial Gama · Material</div>
+            </div>
+          </div>
+          <div class="hi-value neg">R$ 290</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECTS TABLE -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Resultado por Projeto / Cliente</div>
+        <span class="chart-tag">Março 2025</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Projeto / Cliente</th>
+            <th>Receita</th>
+            <th>Custo</th>
+            <th>Lucro</th>
+            <th style="width:200px">Margem</th>
+          </tr>
+        </thead>
+        <tbody id="projectsBody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /pageDashboard -->
+
+  <!-- PAGE: CHAT -->
+  <div id="pageChat" class="page">
+
+    <div class="chat-layout">
+
+      <!-- CHAT MAIN -->
+      <div class="chat-main">
+        <div class="chat-topbar">
+          <div class="agent-avatar">🤖</div>
+          <div class="agent-info">
+            <div class="agent-name">Agente InfraReport</div>
+            <div class="agent-status">Online agora</div>
+          </div>
+          <span class="chart-tag">Plano Pro</span>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <!-- Welcome message -->
+          <div class="msg-row bot">
+            <div class="msg-avatar bot">IR</div>
+            <div>
+              <div class="msg-bubble bot">
+                Olá, <strong>Eng. Carlos!</strong> 👋<br><br>
+                Sou seu agente financeiro. Posso te ajudar com consultas, lançamentos e relatórios diretamente aqui na plataforma.<br><br>
+                Experimente perguntar sobre seu saldo, gastos por categoria ou solicitar um relatório!
+              </div>
+              <div class="msg-time">Agora</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="chat-suggestions">
+            <button class="suggestion-chip" onclick="sendSuggestion(this)">Qual meu saldo de março?</button>
+            <button class="suggestion-chip" onclick="sendSuggestion(this)">Quanto gastei em material?</button>
+            <button class="suggestion-chip" onclick="sendSuggestion(this)">Qual projeto mais lucrativo?</button>
+            <button class="suggestion-chip" onclick="sendSuggestion(this)">Gera relatório do mês</button>
+          </div>
+          <div class="input-row">
+            <textarea
+              class="chat-input"
+              id="chatInput"
+              placeholder="Pergunte sobre suas finanças ou lance um valor..."
+              rows="1"
+              onkeydown="handleKey(event)"
+            ></textarea>
+            <button class="btn-send" id="btnSend" onclick="sendMessage()">➤</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHAT SIDEBAR PANEL -->
+      <div class="chat-sidebar-panel">
+
+        <div class="chat-info-card">
+          <div class="chat-info-title">📊 Resumo Rápido</div>
+          <div class="quick-stat">
+            <span class="qs-label">Entradas (mar)</span>
+            <span class="qs-value g">R$ 9.570</span>
+          </div>
+          <div class="quick-stat">
+            <span class="qs-label">Saídas (mar)</span>
+            <span class="qs-value r">R$ 1.966</span>
+          </div>
+          <div class="quick-stat">
+            <span class="qs-label">Saldo do mês</span>
+            <span class="qs-value b">R$ 7.604</span>
+          </div>
+          <div class="quick-stat">
+            <span class="qs-label">Acumulado 2025</span>
+            <span class="qs-value b">R$ 23.840</span>
+          </div>
+          <div class="quick-stat">
+            <span class="qs-label">Proj. mais lucrativo</span>
+            <span class="qs-value">Supermercado Beta</span>
+          </div>
+        </div>
+
+        <div class="chat-info-card">
+          <div class="chat-info-title">💬 Comandos Úteis</div>
+          <div class="cmd-list">
+            <div class="cmd-item" onclick="sendSuggestion(this)">
+              <strong>Consulta de saldo</strong>
+              "Qual meu saldo de fevereiro?"
+            </div>
+            <div class="cmd-item" onclick="sendSuggestion(this)">
+              <strong>Lançar saída</strong>
+              "Gastei R$386 em material para Construtora Alfa"
+            </div>
+            <div class="cmd-item" onclick="sendSuggestion(this)">
+              <strong>Lançar entrada</strong>
+              "Recebi R$2.840 da Construtora Alfa"
+            </div>
+            <div class="cmd-item" onclick="sendSuggestion(this)">
+              <strong>Relatório por projeto</strong>
+              "Resultado do projeto Supermercado Beta"
+            </div>
+            <div class="cmd-item" onclick="sendSuggestion(this)">
+              <strong>Análise de gastos</strong>
+              "Quanto gastei em material esse ano?"
+            </div>
+          </div>
+        </div>
+
+        <div class="whats-promo">
+          <h4>📱 Acesso via WhatsApp</h4>
+          <p>Com o plano Agency, use o mesmo agente direto no seu WhatsApp — a qualquer hora, em campo ou no escritório.</p>
+          <button class="btn-upgrade">Fazer upgrade →</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /pageChat -->
+
+  <!-- PAGE: PROPOSTAS -->
+  <div id="pagePropostas" class="page">
+    <!-- conteúdo carregado por proposals.html + proposals.js via loadProposals() -->
+  </div><!-- /pagePropostas -->
+
+  </main>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── DATA (virá da planilha / Supabase) ──────────────────────────────────────
+const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const entradas = [6200, 8090, 9570, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const saidas   = [2100, 1753, 1966, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const saldo    = entradas.map((e,i) => e - saidas[i]);
+const acumulado = saldo.reduce((acc,v,i) => { acc.push((acc[i-1]||0)+v); return acc; }, []);
+
+const catEntradas = { labels: ['Serviço Técnico','Contrato Recorrente','Venda Material'], data: [7690, 1200, 680] };
+const catSaidas   = { labels: ['Material','Equipamento','Deslocamento','Mão de Obra'], data: [1196, 340, 180, 250] };
+
+const projetos = [
+  { nome: 'Supermercado Beta',  receita: 4500, custo: 770 },
+  { nome: 'Construtora Alfa',   receita: 2840, custo: 386 },
+  { nome: 'Escritório Delta',   receita: 1200, custo: 0   },
+  { nome: 'Residencial Gama',   receita:  350, custo: 290 },
+  { nome: 'Cliente Avulso',     receita:  680, custo: 320 },
+];
+
+// ── PALETTE ────────────────────────────────────────────────────────────────
+const BLUE   = '#1E40AF';
+const ACCENT = '#3B82F6';
+const LIGHT  = '#93C5FD';
+const GREEN  = '#059669';
+const RED    = '#DC2626';
+const GOLD   = '#D97706';
+const GRID   = '#F1F5F9';
+const TEXT2  = '#94A3B8';
+
+Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+Chart.defaults.color = TEXT2;
+
+// ── BAR CHART (Entradas vs Saídas) ─────────────────────────────────────────
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: meses,
+    datasets: [
+      {
+        label: 'Entradas',
+        data: entradas,
+        backgroundColor: 'rgba(5,150,105,0.15)',
+        borderColor: GREEN,
+        borderWidth: 2,
+        borderRadius: 6,
+      },
+      {
+        label: 'Saídas',
+        data: saidas,
+        backgroundColor: 'rgba(220,38,38,0.12)',
+        borderColor: RED,
+        borderWidth: 2,
+        borderRadius: 6,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 10, padding: 16, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` R$ ${ctx.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits:2})}`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: GRID }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: GRID },
+        ticks: {
+          font: { size: 10 },
+          callback: v => v === 0 ? '0' : 'R$ ' + (v/1000).toFixed(0) + 'k'
+        }
+      }
+    }
+  }
+});
+
+// ── LINE CHART (Saldo acumulado) ────────────────────────────────────────────
+new Chart(document.getElementById('lineChart'), {
+  type: 'line',
+  data: {
+    labels: meses,
+    datasets: [{
+      label: 'Saldo Acumulado',
+      data: acumulado,
+      borderColor: ACCENT,
+      backgroundColor: 'rgba(59,130,246,0.08)',
+      borderWidth: 2.5,
+      pointBackgroundColor: ACCENT,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` R$ ${ctx.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits:2})}`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: GRID }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: GRID },
+        ticks: {
+          font: { size: 10 },
+          callback: v => v === 0 ? '0' : 'R$ ' + (v/1000).toFixed(0) + 'k'
+        }
+      }
+    }
+  }
+});
+
+// ── DONUT ENTRADAS ─────────────────────────────────────────────────────────
+new Chart(document.getElementById('donutEntradas'), {
+  type: 'doughnut',
+  data: {
+    labels: catEntradas.labels,
+    datasets: [{
+      data: catEntradas.data,
+      backgroundColor: [BLUE, ACCENT, LIGHT],
+      borderWidth: 0,
+      hoverOffset: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '68%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` R$ ${ctx.parsed.toLocaleString('pt-BR', {minimumFractionDigits:2})}`
+        }
+      }
+    }
+  }
+});
+
+// ── DONUT SAÍDAS ───────────────────────────────────────────────────────────
+new Chart(document.getElementById('donutSaidas'), {
+  type: 'doughnut',
+  data: {
+    labels: catSaidas.labels,
+    datasets: [{
+      data: catSaidas.data,
+      backgroundColor: [RED, '#EF4444', '#F87171', '#FCA5A5'],
+      borderWidth: 0,
+      hoverOffset: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '68%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` R$ ${ctx.parsed.toLocaleString('pt-BR', {minimumFractionDigits:2})}`
+        }
+      }
+    }
+  }
+});
+
+// ── BAR MARGEM ─────────────────────────────────────────────────────────────
+new Chart(document.getElementById('barMargem'), {
+  type: 'bar',
+  data: {
+    labels: projetos.map(p => p.nome.split(' ')[0]),
+    datasets: [{
+      label: 'Margem %',
+      data: projetos.map(p => p.receita > 0 ? Math.round((p.receita - p.custo) / p.receita * 100) : 0),
+      backgroundColor: projetos.map((p, i) => {
+        const colors = [BLUE, ACCENT, GREEN, GOLD, LIGHT];
+        return colors[i % colors.length] + '33';
+      }),
+      borderColor: projetos.map((p, i) => {
+        const colors = [BLUE, ACCENT, GREEN, GOLD, LIGHT];
+        return colors[i % colors.length];
+      }),
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y}%` } }
+    },
+    scales: {
+      x: { grid: { color: GRID }, ticks: { font: { size: 10 } } },
+      y: {
+        grid: { color: GRID },
+        min: 0, max: 100,
+        ticks: { callback: v => v + '%', font: { size: 10 } }
+      }
+    }
+  }
+});
+
+// ── PROJECTS TABLE ─────────────────────────────────────────────────────────
+const tbody = document.getElementById('projectsBody');
+projetos.sort((a, b) => (b.receita - b.custo) - (a.receita - a.custo));
+projetos.forEach(p => {
+  const lucro  = p.receita - p.custo;
+  const margem = p.receita > 0 ? (lucro / p.receita * 100).toFixed(1) : 0;
+  const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  tbody.innerHTML += `
+    <tr>
+      <td class="td-project">${p.nome}</td>
+      <td class="td-rec">${fmt(p.receita)}</td>
+      <td class="td-cost">${fmt(p.custo)}</td>
+      <td class="td-profit ${lucro >= 0 ? 'pos' : 'neg'}">${fmt(lucro)}</td>
+      <td>
+        <div class="margin-bar-wrap">
+          <div class="margin-bar">
+            <div class="margin-fill" style="width:${margem}%"></div>
+          </div>
+          <span class="margin-pct">${margem}%</span>
+        </div>
+      </td>
+    </tr>`;
+});
+
+// ── PERIOD BUTTONS ─────────────────────────────────────────────────────────
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ── PAGE NAVIGATION — delegada ao router.js ─────────────────────────────────
+
+// ── CHAT AGENT ─────────────────────────────────────────────────────────────
+const FINANCIAL_DATA = {
+  entradas_marco: 9570, saidas_marco: 1966, saldo_marco: 7604,
+  acumulado_2025: 23840,
+  entradas_por_tipo: { 'Serviço Técnico': 7690, 'Contrato Recorrente': 1200, 'Venda Material': 680 },
+  saidas_por_categoria: { 'Material': 1196, 'Equipamento': 340, 'Deslocamento': 180, 'Mão de Obra': 250 },
+  projetos: [
+    { nome: 'Supermercado Beta', receita: 4500, custo: 770, margem: 82.9 },
+    { nome: 'Construtora Alfa',  receita: 2840, custo: 386, margem: 86.4 },
+    { nome: 'Escritório Delta',  receita: 1200, custo: 0,   margem: 100  },
+    { nome: 'Residencial Gama',  receita:  350, custo: 290, margem: 17.1 },
+    { nome: 'Cliente Avulso',    receita:  680, custo: 320, margem: 52.9 },
+  ],
+  historico_mensal: [
+    { mes: 'Janeiro', entradas: 6200, saidas: 2100 },
+    { mes: 'Fevereiro', entradas: 8090, saidas: 1753 },
+    { mes: 'Março', entradas: 9570, saidas: 1966 },
+  ]
+};
+
+const SYSTEM_PROMPT = `Você é o Agente Financeiro da plataforma InfraReport, assistente inteligente para engenheiros e técnicos de serviços (AC, CFTV, elétrica, hidráulica).
+
+Você tem acesso aos dados financeiros do usuário (Eng. Carlos Silva, Plano Pro):
+${JSON.stringify(FINANCIAL_DATA, null, 2)}
+
+Suas responsabilidades:
+- Responder consultas financeiras com os dados acima
+- Interpretar lançamentos ("gastei R$X em Y para projeto Z") e confirmar o registro
+- Gerar análises e relatórios em linguagem clara e objetiva
+- Destacar insights importantes (maior projeto, gasto excessivo, tendências)
+
+Regras de resposta:
+- Seja direto, use no máximo 3-4 parágrafos curtos
+- Use R$ com formato brasileiro (R$ 1.234,56)
+- Quando mostrar números, use negrito com **valor**
+- Se o usuário pedir para lançar algo, confirme com os detalhes
+- Não invente dados que não estão no contexto fornecido
+- Responda sempre em português brasileiro`;
+
+let chatHistory = [];
+let isTyping = false;
+
+function now() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function appendMessage(role, content) {
+  const msgs = document.getElementById('chatMessages');
+  const isUser = role === 'user';
+  const initials = isUser ? 'CS' : 'TF';
+  const bubbleClass = isUser ? 'user' : 'bot';
+  const rowClass = isUser ? 'user' : 'bot';
+  // Convert **text** to <strong>
+  const html = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+  const div = document.createElement('div');
+  div.className = `msg-row ${rowClass}`;
+  div.innerHTML = `
+    <div class="msg-avatar ${bubbleClass}">${initials}</div>
+    <div>
+      <div class="msg-bubble ${bubbleClass}">${html}</div>
+      <div class="msg-time">${now()}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg-row bot';
+  div.id = 'typingIndicator';
+  div.innerHTML = `
+    <div class="msg-avatar bot">IR</div>
+    <div class="typing-indicator"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  if (isTyping) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  appendMessage('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  isTyping = true;
+  document.getElementById('btnSend').disabled = true;
+  showTyping();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: chatHistory
+      })
+    });
+
+    const data = await response.json();
+    hideTyping();
+
+    const reply = data.content?.[0]?.text || 'Desculpe, não consegui processar sua solicitação.';
+    chatHistory.push({ role: 'assistant', content: reply });
+    appendMessage('bot', reply);
+
+  } catch (err) {
+    hideTyping();
+    appendMessage('bot', 'Erro de conexão. Tente novamente em instantes.');
+  }
+
+  isTyping = false;
+  document.getElementById('btnSend').disabled = false;
+}
+
+function sendSuggestion(el) {
+  const text = el.textContent.trim().replace(/^"(.+)"$/, '$1');
+  document.getElementById('chatInput').value = text;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+// ── PROPOSTAS — lógica movida para proposals.js ──────────────────────────────
+
+// ── AGENTE COMERCIAL ────────────────────────────────────────────────────────
+const PROP_SYSTEM = `Você é o Agente Comercial da plataforma InfraReport, especializado em gerar propostas profissionais para prestadores de serviço técnico (AC, CFTV, TI/Redes, Elétrica, Hidráulica).
+
+Usuário: Eng. Carlos Silva | Plano Pro | Empresa: Carlos Silva Serviços Técnicos
+
+Propostas existentes no sistema:
+${JSON.stringify(propostas.map(p=>({cliente:p.cliente,servico:p.servico,valor:p.valor,status:p.status})), null, 2)}
+
+Suas funções:
+1. Coletar dados para gerar proposta: cliente, tipo de serviço, equipamentos, quantidade, localização, e-mail do cliente
+2. Calcular valor estimado baseado no mercado de Brasília-DF
+3. Gerar resumo da proposta com todos os dados
+4. Instruir o engenheiro a responder "APROVAR" para disparar o e-mail
+5. Responder sobre status de propostas existentes
+6. Dar dicas comerciais para aumentar conversão
+
+Tabela de preços base (Brasília):
+- AC: manutenção preventiva R$200-350/unidade | instalação R$400-800/unidade | contrato anual -15%
+- CFTV: câmera instalada R$350-600/unidade | cabeamento R$8-15/metro | DVR/NVR a parte
+- TI/Redes: switch gerenciável R$150-400/port | ponto de rede cat6 R$120-250 | AP corporativo R$400-800
+- Controle de acesso: catraca R$800-2000 | leitor biométrico R$300-600
+
+Regras:
+- Seja direto e objetivo, máximo 4 parágrafos
+- Use R$ formato brasileiro (R$ 1.234)
+- Use **negrito** para valores e nomes importantes
+- Se pedir nova proposta, colete os dados faltantes um a um
+- Sempre confirme com resumo antes de "aguardar aprovação"
+- Responda sempre em português brasileiro`;
+
+let propHistory = [];
+let isPropTyping = false;
+
+function addPropBotMsg(html) {
+  const msgs = document.getElementById('propChatMessages');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.className = 'msg-row bot';
+  div.innerHTML = `
+    <div class="msg-avatar bot">IR</div>
+    <div>
+      <div class="msg-bubble bot">${html}</div>
+      <div class="msg-time">${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addPropUserMsg(text) {
+  const msgs = document.getElementById('propChatMessages');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.className = 'msg-row user';
+  div.innerHTML = `
+    <div class="msg-avatar usr">CS</div>
+    <div>
+      <div class="msg-bubble user">${text}</div>
+      <div class="msg-time">${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showPropTyping() {
+  const msgs = document.getElementById('propChatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg-row bot';
+  div.id = 'propTyping';
+  div.innerHTML = `<div class="msg-avatar bot">IR</div><div class="typing-indicator"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function hidePropTyping() {
+  const el = document.getElementById('propTyping');
+  if (el) el.remove();
+}
+
+async function sendPropMessage() {
+  if (isPropTyping) return;
+  const input = document.getElementById('propChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  addPropUserMsg(text);
+  propHistory.push({ role: 'user', content: text });
+
+  isPropTyping = true;
+  document.getElementById('btnPropSend').disabled = true;
+  showPropTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: PROP_SYSTEM,
+        messages: propHistory
+      })
+    });
+    const data = await res.json();
+    hidePropTyping();
+    const reply = data.content?.[0]?.text || 'Erro ao processar. Tente novamente.';
+    propHistory.push({ role: 'assistant', content: reply });
+    const html = reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    addPropBotMsg(html);
+
+    // Se aprovou, atualiza UI
+    if (text.toUpperCase().includes('APROVAR')) {
+      setTimeout(() => {
+        const pending = propostas.find(p => p.status === 'gerando');
+        if (pending) { pending.status = 'enviada'; renderProps('todas'); }
+      }, 1000);
+    }
+  } catch(err) {
+    hidePropTyping();
+    addPropBotMsg('Erro de conexão. Tente novamente em instantes.');
+  }
+
+  isPropTyping = false;
+  document.getElementById('btnPropSend').disabled = false;
+}
+
+function sendPropSuggestion(el) {
+  const text = el.textContent.trim().replace(/^[0-9]+\.\s/, '').replace(/^"(.+)"$/, '$1');
+  document.getElementById('propChatInput').value = text;
+  sendPropMessage();
+}
+
+function handlePropKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPropMessage(); }
+}
+
+document.getElementById('propChatInput').addEventListener('keydown', handlePropKey);
+
+</script>
+
+<!-- ── ROUTER (carrega por último, após todo o JS inline) ── -->
+<script src="router.js"></script>
+
+</body>
+</html>
