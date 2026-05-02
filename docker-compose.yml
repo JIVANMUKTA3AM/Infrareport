@@ -12,7 +12,7 @@ services:
     # Expõe a porta para facilitar testes locais independentes.
     # Em prod, o nginx acessará diretamente via rede docker (porta 8000 exposta pelo Dockerfile)
     ports:
-      - "8000:8000"
+      - "8001:8000"
 
   frontend:
     build: ./frontend-react
