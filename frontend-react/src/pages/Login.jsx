@@ -15,15 +15,31 @@ const PLANS = [
 ]
 
 export default function Login({ onBack, defaultTab = 'login' }) {
-  const { signIn, signUp, signInWithGoogle } = useAuth()
-  const [tab,      setTab]      = useState(defaultTab) // 'login' | 'register'
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState('')
-  const [success,  setSuccess]  = useState('')
-  const [showPass, setShowPass] = useState(false)
+  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth()
+  const [tab,        setTab]       = useState(defaultTab) // 'login' | 'register'
+  const [loading,    setLoading]   = useState(false)
+  const [error,      setError]     = useState('')
+  const [success,    setSuccess]   = useState('')
+  const [showPass,   setShowPass]  = useState(false)
+  const [forgotMode, setForgotMode] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetSent,  setResetSent]  = useState(false)
 
   const [form, setForm] = useState({ name: '', company: '', email: '', password: '' })
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
+
+  async function handleReset(e) {
+    e.preventDefault()
+    setError(''); setLoading(true)
+    try {
+      await resetPassword(resetEmail)
+      setResetSent(true)
+    } catch (err) {
+      setError(err.message || 'Não foi possível enviar o e-mail de redefinição.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -209,7 +225,16 @@ export default function Login({ onBack, defaultTab = 'login' }) {
               onChange={set('email')} placeholder="joao@empresa.com" required />
 
             <div>
-              <label className="block text-[0.75rem] font-bold text-slate-600 mb-1.5">Senha</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[0.75rem] font-bold text-slate-600">Senha</label>
+                {tab === 'login' && (
+                  <button type="button"
+                    onClick={() => { setForgotMode(f => !f); setError(''); setResetSent(false) }}
+                    className="text-[0.72rem] text-blue-500 hover:text-blue-700 font-medium transition-colors">
+                    Esqueci minha senha
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -232,6 +257,39 @@ export default function Login({ onBack, defaultTab = 'login' }) {
                   {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
+
+              {/* Painel de reset de senha */}
+              {forgotMode && tab === 'login' && (
+                <div className="mt-3 p-4 rounded-xl"
+                  style={{ background:'rgba(37,99,235,0.05)', border:'1px solid rgba(37,99,235,0.15)' }}>
+                  {resetSent ? (
+                    <div className="flex items-center gap-2 text-[0.78rem] font-medium text-emerald-700">
+                      <CheckCircle size={14} />
+                      Link enviado! Verifique sua caixa de entrada.
+                    </div>
+                  ) : (
+                    <form onSubmit={handleReset} className="flex flex-col gap-2">
+                      <p className="text-[0.75rem] text-slate-500">Digite seu e-mail para receber o link de redefinição.</p>
+                      <input
+                        type="email"
+                        value={resetEmail}
+                        onChange={e => setResetEmail(e.target.value)}
+                        placeholder="seu@email.com"
+                        required
+                        className="w-full px-3 py-2 rounded-lg text-[0.82rem] text-slate-800 outline-none"
+                        style={{ background:'#fff', border:'1.5px solid rgba(37,99,235,0.2)' }}
+                        onFocus={e => e.target.style.borderColor = '#3B82F6'}
+                        onBlur={e => e.target.style.borderColor = 'rgba(37,99,235,0.2)'}
+                      />
+                      <button type="submit" disabled={loading}
+                        className="w-full py-2 rounded-lg text-[0.8rem] font-bold text-white transition-all disabled:opacity-60"
+                        style={{ background:'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+                        {loading ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Enviar link'}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Erro / Sucesso */}
