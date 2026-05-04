@@ -4,9 +4,10 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(null)   // perfil da tabela users
-  const [session, setSession] = useState(null)   // sessão Supabase Auth
-  const [loading, setLoading] = useState(true)
+  const [user,         setUser]         = useState(null)
+  const [session,      setSession]      = useState(null)
+  const [loading,      setLoading]      = useState(true)
+  const [recoveryMode, setRecoveryMode] = useState(false)
 
   // Carrega perfil da tabela users a partir do auth.uid
   async function loadProfile(authUser) {
@@ -27,7 +28,13 @@ export function AuthProvider({ children }) {
     })
 
     // Listener de mudanças
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveryMode(true)
+        setSession(session)
+        return
+      }
+      setRecoveryMode(false)
       setSession(session)
       loadProfile(session?.user)
     })
@@ -62,6 +69,12 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
+  async function updatePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+    setRecoveryMode(false)
+  }
+
   async function resetPassword(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}`,
@@ -75,7 +88,7 @@ export function AuthProvider({ children }) {
     setSession(null)
   }
 
-  const value = { user, session, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword }
+  const value = { user, session, loading, recoveryMode, signUp, signIn, signInWithGoogle, signOut, resetPassword, updatePassword }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

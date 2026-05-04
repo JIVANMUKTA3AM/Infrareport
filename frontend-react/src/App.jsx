@@ -7,7 +7,8 @@ import Files        from './pages/Files'
 import AgenteTecnico  from './pages/AgenteTecnico'
 import Configuracoes  from './pages/Configuracoes'
 import Login          from './pages/Login'
-import Landing      from './pages/Landing'
+import Landing        from './pages/Landing'
+import SetNewPassword from './pages/SetNewPassword'
 import Placeholder  from './pages/Placeholder'
 import Propostas      from './pages/Propostas'
 import AgenteFinanceiro from './pages/AgenteFinanceiro'
@@ -57,7 +58,7 @@ function LoadingScreen() {
 
 // ── App autenticado ───────────────────────────────────────────────────────
 function AuthenticatedApp() {
-  const { user, loading, signOut } = useAuth()
+  const { user, loading, signOut, recoveryMode } = useAuth()
 
   const [page, setPage] = useState(() => {
     const hash = location.hash.replace('#', '')
@@ -78,6 +79,8 @@ function AuthenticatedApp() {
   const [view, setView] = useState('landing') // 'landing' | 'login' | 'register'
 
   if (loading) return <LoadingScreen />
+
+  if (recoveryMode) return <SetNewPassword />
 
   if (!user) {
     if (view === 'login')    return <Login onBack={() => setView('landing')} defaultTab="login"    />
