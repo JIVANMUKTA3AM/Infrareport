@@ -1,20 +1,111 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Zap, ChevronRight, ArrowRight, MessageSquare, Check,
   Wrench, TrendingUp, FileText, MessageCircle,
   Star, Menu, X, Thermometer, Camera, Wifi,
   Lock, Bell, Settings2, LayoutDashboard,
-  Activity,
+  ChevronUp,
 } from 'lucide-react'
 
-// ── Inline SVG Charts ─────────────────────────────────────────────────────────
+// ── Keyframes injetados uma vez ───────────────────────────────────────────────
+const GLOBAL_STYLES = `
+  @keyframes shimmer {
+    0%   { left: -100%; }
+    100% { left: 160%; }
+  }
+  @keyframes starWave {
+    0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+    60%  { transform: scale(1.3) rotate(5deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  @keyframes floatA {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%       { transform: translateY(-18px) scale(1.04); }
+  }
+  @keyframes floatB {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50%       { transform: translateY(-12px) rotate(15deg); }
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-4px); }
+  }
+  @keyframes ledPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.15; }
+  }
+  @keyframes bellShake {
+    0%, 100% { transform: rotate(0); }
+    15%       { transform: rotate(12deg); }
+    45%       { transform: rotate(-10deg); }
+    75%       { transform: rotate(6deg); }
+  }
+  @keyframes spinSlow {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes revealUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @property --conic-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+  @keyframes rotateConic {
+    to { --conic-angle: 360deg; }
+  }
+  .plan-conic-wrap {
+    background: conic-gradient(
+      from var(--conic-angle),
+      #3B82F6 0%, #1D4ED8 25%, #60A5FA 50%, #1D4ED8 75%, #3B82F6 100%
+    );
+    animation: rotateConic 4s linear infinite;
+    padding: 2px;
+    border-radius: 18px;
+  }
+  .btn-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-shine::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    transition: left 0s;
+  }
+  .btn-shine:hover::after {
+    left: 160%;
+    transition: left 0.5s ease;
+  }
+  .section-reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1);
+  }
+  .section-reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .floating-blob { display: none !important; }
+  }
+`
+
+// ── Mini Bar Chart ────────────────────────────────────────────────────────────
 function MiniBarChart() {
   const data = [
     { r: 55, e: 38 }, { r: 72, e: 45 }, { r: 62, e: 52 },
     { r: 84, e: 41 }, { r: 70, e: 48 }, { r: 91, e: 39 }, { r: 80, e: 55 },
   ]
   const H = 52, BAR = 9, GAP = 2, STEP = 29
-
   return (
     <svg width="100%" height={H} viewBox={`0 0 210 ${H}`} preserveAspectRatio="none">
       <defs>
@@ -37,8 +128,7 @@ function MiniBarChart() {
   )
 }
 
-
-// ── Dashboard view para o hero ────────────────────────────────────────────────
+// ── Dashboard View ────────────────────────────────────────────────────────────
 function DashboardView() {
   return (
     <div className="p-3 pb-2">
@@ -53,8 +143,6 @@ function DashboardView() {
           ))}
         </div>
       </div>
-
-      {/* KPI cards */}
       <div className="grid grid-cols-3 gap-2 mb-3">
         {[
           { label: 'Receita', value: 'R$ 28,4k', delta: '+12%', up: true,  color: '#34D399' },
@@ -69,8 +157,6 @@ function DashboardView() {
           </div>
         ))}
       </div>
-
-      {/* Bar chart */}
       <div className="rounded-xl p-2.5 mb-2"
         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="flex items-center justify-between mb-1.5">
@@ -90,8 +176,6 @@ function DashboardView() {
           ))}
         </div>
       </div>
-
-      {/* Bottom row */}
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="text-[0.55rem] text-white/25 mb-0.5">Propostas enviadas</div>
@@ -108,7 +192,7 @@ function DashboardView() {
   )
 }
 
-// ── Chat view para o hero ─────────────────────────────────────────────────────
+// ── Chat View ─────────────────────────────────────────────────────────────────
 function ChatView({ agent }) {
   return (
     <div className="p-3">
@@ -126,7 +210,6 @@ function ChatView({ agent }) {
           </div>
         </div>
       ))}
-      {/* Typing dots */}
       <div className="flex justify-start">
         <div className="flex gap-1 px-3 py-2 rounded-xl"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -149,68 +232,54 @@ const HERO_TABS = [
 ]
 
 const STATS = [
-  { value: '9+',   label: 'Nichos técnicos atendidos' },
-  { value: '3',    label: 'Agentes de IA integrados' },
-  { value: '<2s',  label: 'Resposta média do agente' },
-  { value: '24/7', label: 'Sem parar' },
+  { numeric: 9,    suffix: '+', display: null, label: 'Nichos técnicos atendidos' },
+  { numeric: 3,    suffix: '',  display: null, label: 'Agentes de IA integrados' },
+  { numeric: null, suffix: '',  display: '<2s', label: 'Resposta média do agente' },
+  { numeric: null, suffix: '',  display: '24/7', label: 'Sem parar' },
 ]
 
 const AGENTS = [
   {
-    icon: Wrench,
-    agentKey: 'tecnico',
-    tag:   'Técnico',
-    title: 'Agente Técnico',
-    desc:  'Diagnóstico de falhas, dimensionamentos, laudos técnicos e consulta de normas NBR/NR para 9 nichos de atuação.',
-    color: '#06B6D4',
-    bg:    'rgba(6,182,212,0.08)',
-    border:'rgba(6,182,212,0.2)',
+    icon: Wrench, agentKey: 'tecnico', tag: 'Técnico', title: 'Agente Técnico',
+    desc: 'Diagnóstico de falhas, dimensionamentos, laudos técnicos e consulta de normas NBR/NR para 9 nichos de atuação.',
+    color: '#06B6D4', bg: 'rgba(6,182,212,0.08)', border: 'rgba(6,182,212,0.2)',
     chat: [
       { from: 'user', text: 'Disjuntor Q3 (32A) do QD-02 disparando com carga medida de 18A. Já substituí o disjuntor e o problema persiste. Me ajuda a traçar uma estratégia.' },
-      { from: 'ai',   text: 'Disparo com 18A em 32A descarta sobrecarga — o problema é isolação degradada no ramal. Estratégia: (1) Desligue Q3 e meça resistência de isolação com megôhmmetro — fase×neutro e fase×terra, mín. 1MΩ (NBR 5410 §6.3.3). (2) Se Riso < 1MΩ, divida o ramal por segmentos para localizar o ponto. (3) Inspecione o trecho QD-02 → TUG-14: cabo prensado em eletrocalha ou emenda dentro de eletroduto são as causas mais comuns neste padrão.' },
+      { from: 'ai',   text: 'Disparo com 18A em 32A descarta sobrecarga — o problema é isolação degradada no ramal. Estratégia: (1) Meça resistência de isolação com megôhmmetro — mín. 1MΩ (NBR 5410 §6.3.3). (2) Se Riso < 1MΩ, divida o ramal por segmentos para localizar o ponto.' },
     ],
   },
   {
-    icon: FileText,
-    agentKey: 'comercial',
-    tag:   'Comercial',
-    title: 'Agente Comercial',
-    desc:  'Gera propostas profissionais em .docx com precificação validada e envia automaticamente por e-mail ao cliente.',
-    color: '#3B82F6',
-    bg:    'rgba(59,130,246,0.08)',
-    border:'rgba(59,130,246,0.2)',
+    icon: FileText, agentKey: 'comercial', tag: 'Comercial', title: 'Agente Comercial',
+    desc: 'Gera propostas profissionais em .docx com precificação validada e envia automaticamente por e-mail ao cliente.',
+    color: '#3B82F6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)',
     chat: [
       { from: 'user', text: 'Proposta para instalação de 8 câmeras IP 4MP com NVR 16 canais no galpão da Construtora Beta.' },
-      { from: 'ai',   text: 'Proposta gerada — 8 câmeras IP 4MP + NVR 16CH + cabeamento Cat5e estruturado. Total: R$ 6.840,00 (materiais + mão de obra + ART). Arquivo .docx padrão ABNT gerado e enviado para contato@construtorabeta.com.br.' },
+      { from: 'ai',   text: 'Proposta gerada — 8 câmeras IP 4MP + NVR 16CH + cabeamento Cat5e estruturado. Total: R$ 6.840,00. Arquivo .docx gerado e enviado para contato@construtorabeta.com.br.' },
     ],
   },
   {
-    icon: TrendingUp,
-    agentKey: 'financeiro',
-    tag:   'Financeiro',
-    title: 'Agente Financeiro',
-    desc:  'Registre movimentações em linguagem natural. O agente classifica, persiste no banco e atualiza seu saldo em tempo real.',
-    color: '#10B981',
-    bg:    'rgba(16,185,129,0.08)',
-    border:'rgba(16,185,129,0.2)',
+    icon: TrendingUp, agentKey: 'financeiro', tag: 'Financeiro', title: 'Agente Financeiro',
+    desc: 'Registre movimentações em linguagem natural. O agente classifica, persiste no banco e atualiza seu saldo em tempo real.',
+    color: '#10B981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)',
     chat: [
       { from: 'user', text: 'Entrada de R$8.500 do cliente Grupo TechPark — OS 2341, serviço de cabeamento estruturado concluído.' },
-      { from: 'ai',   text: 'Receita de R$ 8.500,00 registrada — categoria: Serviços Concluídos / OS 2341. Saldo atualizado: R$ 26.350,00. Margem do projeto: 62%. Deseja registrar o lançamento fiscal correspondente?' },
+      { from: 'ai',   text: 'Receita de R$ 8.500,00 registrada — categoria: Serviços Concluídos / OS 2341. Saldo: R$ 26.350,00. Margem: 62%.' },
     ],
   },
 ]
 
 const AGENT_MAP = { tecnico: AGENTS[0], comercial: AGENTS[1], financeiro: AGENTS[2] }
 
+// cor e animação específica por nicho
 const NICHES = [
-  { icon: Thermometer, label: 'Climatização / AC',    color: '#0EA5E9' },
-  { icon: Camera,      label: 'CFTV / Segurança',     color: '#8B5CF6' },
-  { icon: Wifi,        label: 'TI / Redes',            color: '#06B6D4' },
-  { icon: Lock,        label: 'Controle de Acesso',   color: '#10B981' },
-  { icon: Zap,         label: 'Instalações Elétricas', color: '#F59E0B' },
-  { icon: Bell,        label: 'Alarme / Monit.',      color: '#EF4444' },
-  { icon: Settings2,   label: 'Automação Predial',    color: '#EC4899' },
-  { icon: MessageCircle,label:'Agente WhatsApp',       color: '#22C55E' },
+  { icon: Thermometer, label: 'Climatização / AC',    color: '#0EA5E9', anim: 'spinSlow 6s linear infinite' },
+  { icon: Camera,      label: 'CFTV / Segurança',     color: '#8B5CF6', anim: 'ledPulse 1.6s ease-in-out infinite' },
+  { icon: Wifi,        label: 'TI / Redes',            color: '#06B6D4', anim: 'none' },
+  { icon: Lock,        label: 'Controle de Acesso',   color: '#10B981', anim: 'none' },
+  { icon: Zap,         label: 'Instalações Elétricas', color: '#F59E0B', anim: 'none' },
+  { icon: Bell,        label: 'Alarme / Monit.',      color: '#EF4444', anim: 'bellShake 0.6s ease infinite' },
+  { icon: Settings2,   label: 'Automação Predial',    color: '#EC4899', anim: 'spinSlow 4s linear infinite' },
+  { icon: MessageCircle,label:'Agente WhatsApp',       color: '#22C55E', anim: 'bounce 1s ease-in-out infinite' },
 ]
 
 const PLANS = [
@@ -233,50 +302,63 @@ const PLANS = [
 
 const TESTIMONIALS = [
   {
-    name: 'Marcos Oliveira', role: 'Técnico em Refrigeração · Brasília-DF', stars: 5,
+    name: 'Marcos Oliveira', role: 'Técnico em Refrigeração · Brasília-DF', stars: 5, initials: 'MO',
     text: 'Reduzi o tempo de elaboração de propostas de 2 horas para 3 minutos. O agente já conhece os preços do mercado e os ajusta automaticamente.',
+    gradient: 'linear-gradient(135deg,#1D4ED8,#06B6D4)',
   },
   {
-    name: 'Eng. Patrícia Costa', role: 'Integradora de CFTV · São Paulo-SP', stars: 5,
+    name: 'Eng. Patrícia Costa', role: 'Integradora de CFTV · São Paulo-SP', stars: 5, initials: 'PC',
     text: 'O controle financeiro por linguagem natural mudou minha rotina. Só digito "recebi R$3500 do cliente X" e o sistema resolve tudo sozinho.',
+    gradient: 'linear-gradient(135deg,#7C3AED,#EC4899)',
   },
   {
-    name: 'Ricardo Alves', role: 'Eletricista NR10 · Goiânia-GO', stars: 5,
+    name: 'Ricardo Alves', role: 'Eletricista NR10 · Goiânia-GO', stars: 5, initials: 'RA',
     text: 'O agente técnico me salvou numa obra complexa. Perguntei sobre dimensionamento de SPDA e ele trouxe a NBR 5419 com os cálculos em segundos.',
+    gradient: 'linear-gradient(135deg,#059669,#10B981)',
   },
 ]
 
-// ── NicheCard interativo ─────────────────────────────────────────────────────
-function NicheCard({ icon: Icon, label, color }) {
+// ── NicheCard com animação por nicho ─────────────────────────────────────────
+function NicheCard({ icon: Icon, label, color, anim }) {
   const [hovered, setHovered] = useState(false)
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
   return (
     <div
       className="flex items-center gap-3 p-4 rounded-2xl cursor-default"
       style={{
         background: hovered ? `${color}14` : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${hovered ? color + '45' : 'rgba(255,255,255,0.07)'}`,
-        transform: hovered ? 'translateY(-3px)' : 'none',
-        boxShadow: hovered ? `0 10px 28px ${color}28` : 'none',
-        transition: 'all 0.2s ease',
+        border: `1px solid ${hovered ? color + '50' : 'rgba(255,255,255,0.07)'}`,
+        transform: hovered ? 'translateY(-4px)' : 'none',
+        boxShadow: hovered ? `0 12px 28px ${color}30` : 'none',
+        transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
         style={{
-          background: hovered ? `${color}28` : `${color}18`,
-          border: `1px solid ${hovered ? color + '55' : color + '35'}`,
-          boxShadow: hovered ? `0 0 18px ${color}40` : 'none',
-          transform: hovered ? 'scale(1.12) rotate(-4deg)' : 'scale(1)',
-          transition: 'all 0.2s ease',
+          background: hovered
+            ? `linear-gradient(135deg, ${color}35, ${color}18)`
+            : `linear-gradient(135deg, ${color}22, ${color}10)`,
+          border: `1px solid ${hovered ? color + '60' : color + '35'}`,
+          boxShadow: hovered ? `0 0 20px ${color}45` : 'none',
+          transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
         }}
       >
-        <Icon size={16} style={{ color }} />
+        <Icon
+          size={17}
+          style={{
+            color,
+            animation: hovered && !reducedMotion ? anim : 'none',
+            transition: 'transform 0.3s ease',
+          }}
+        />
       </div>
       <span
         className="text-[0.8rem] font-semibold text-left"
-        style={{ color: hovered ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)', transition: 'color 0.2s ease' }}
+        style={{ color: hovered ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.6)', transition: 'color 0.2s' }}
       >
         {label}
       </span>
@@ -284,7 +366,7 @@ function NicheCard({ icon: Icon, label, color }) {
   )
 }
 
-// ── AgentCard interativo ──────────────────────────────────────────────────────
+// ── AgentCard com glow hover ──────────────────────────────────────────────────
 function AgentCard({ ag }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -292,10 +374,10 @@ function AgentCard({ ag }) {
       className="rounded-2xl p-6 flex flex-col"
       style={{
         background: '#fff',
-        border: `1px solid ${hovered ? ag.color + '50' : ag.border}`,
-        boxShadow: hovered ? `0 12px 40px ${ag.color}20` : `0 2px 12px ${ag.color}10`,
-        transform: hovered ? 'translateY(-4px)' : 'none',
-        transition: 'all 0.2s ease',
+        border: `1px solid ${hovered ? ag.color + '55' : ag.border}`,
+        boxShadow: hovered ? `0 16px 48px ${ag.color}25` : `0 2px 12px ${ag.color}10`,
+        transform: hovered ? 'translateY(-5px)' : 'none',
+        transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -305,14 +387,14 @@ function AgentCard({ ag }) {
           style={{
             background: ag.bg,
             border: `1px solid ${ag.border}`,
-            boxShadow: hovered ? `0 0 20px ${ag.color}30` : 'none',
-            transition: 'box-shadow 0.2s ease',
+            boxShadow: hovered ? `0 0 22px ${ag.color}35` : 'none',
+            transition: 'box-shadow 0.3s ease',
           }}>
           <ag.icon size={20} style={{ color: ag.color }} />
         </div>
         <span className="flex items-center gap-1.5 text-[0.6rem] font-bold px-2 py-1 rounded-full"
           style={{ background: ag.bg, color: ag.color, border: `1px solid ${ag.border}` }}>
-          <Activity size={9} />
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: ag.color, animation: 'bounce 2s ease-in-out infinite' }} />
           Ativo 24/7
         </span>
       </div>
@@ -323,7 +405,6 @@ function AgentCard({ ag }) {
       <h3 className="text-[1.05rem] font-black text-slate-900 mb-2">{ag.title}</h3>
       <p className="text-[0.82rem] text-slate-500 leading-relaxed mb-5 flex-1">{ag.desc}</p>
 
-      {/* Chat preview */}
       <div className="rounded-xl p-3 space-y-2"
         style={{ background: '#F8FAFC', border: '1px solid rgba(0,0,0,0.06)' }}>
         {ag.chat.map((msg, j) => (
@@ -337,25 +418,192 @@ function AgentCard({ ag }) {
             </span>
           </div>
         ))}
+        {/* typing indicator */}
+        <div className="flex justify-start">
+          <div className="flex gap-1 px-3 py-2 rounded-xl"
+            style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}>
+            {[0,1,2].map(i => (
+              <div key={i} className="w-1.5 h-1.5 rounded-full"
+                style={{ background: ag.color, opacity: 0.5, animation: `bounce 1s ease-in-out ${i * 0.18}s infinite` }} />
+            ))}
+          </div>
+        </div>
       </div>
+    </div>
+  )
+}
+
+// ── TestimonialCard com tilt 3D ───────────────────────────────────────────────
+function TestimonialCard({ t }) {
+  const [tilt, setTilt] = useState({ x: 0, y: 0 })
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  const handleMove = useCallback((e) => {
+    if (reducedMotion) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 9
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 9
+    setTilt({ x, y })
+  }, [reducedMotion])
+
+  const handleLeave = useCallback(() => setTilt({ x: 0, y: 0 }), [])
+
+  return (
+    <div
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      className="bg-white rounded-2xl p-6 flex flex-col relative overflow-hidden"
+      style={{
+        border: '1px solid rgba(0,0,0,0.07)',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+        transform: `perspective(700px) rotateX(${-tilt.y}deg) rotateY(${tilt.x}deg)`,
+        transition: tilt.x === 0 && tilt.y === 0 ? 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' : 'transform 0.05s',
+        willChange: 'transform',
+      }}
+    >
+      {/* decorative quote */}
+      <div className="absolute top-4 left-4 text-[4rem] leading-none font-black select-none pointer-events-none"
+        style={{ color: 'rgba(37,99,235,0.06)', fontFamily: 'Georgia, serif', lineHeight: 1 }}>
+        "
+      </div>
+
+      {/* gradient stars */}
+      <div className="flex gap-0.5 mb-4 relative z-10">
+        {[...Array(t.stars)].map((_, j) => (
+          <svg key={j} width="14" height="14" viewBox="0 0 14 14">
+            <defs>
+              <linearGradient id={`sg-${j}`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#FBBF24" />
+                <stop offset="100%" stopColor="#F59E0B" />
+              </linearGradient>
+            </defs>
+            <polygon points="7,1 8.8,5.4 13.5,5.7 10,8.8 11.1,13.4 7,10.8 2.9,13.4 4,8.8 0.5,5.7 5.2,5.4"
+              fill={`url(#sg-${j})`} />
+          </svg>
+        ))}
+      </div>
+
+      <p className="text-[0.85rem] text-slate-600 leading-relaxed mb-5 relative z-10 flex-1">"{t.text}"</p>
+
+      <div className="flex items-center gap-3 relative z-10">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center text-[0.68rem] font-black text-white shrink-0"
+          style={{ background: t.gradient }}>
+          {t.initials}
+        </div>
+        <div>
+          <div className="text-[0.82rem] font-bold text-slate-900">{t.name}</div>
+          <div className="text-[0.72rem] text-slate-400 mt-0.5">{t.role}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Count-up hook ─────────────────────────────────────────────────────────────
+function useCountUp(target, isVisible, duration = 1400) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!isVisible || target === null) return
+    const start = performance.now()
+    const tick = (now) => {
+      const p = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setCount(Math.round(eased * target))
+      if (p < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [isVisible, target, duration])
+  return count
+}
+
+// ── StatItem com count-up ─────────────────────────────────────────────────────
+function StatItem({ stat, isVisible }) {
+  const count = useCountUp(stat.numeric, isVisible)
+  const display = stat.display !== null ? stat.display : `${count}${stat.suffix}`
+  return (
+    <div className="text-center group cursor-default">
+      <div
+        className="text-[1.6rem] font-black text-slate-900 leading-none transition-transform group-hover:scale-110"
+        style={{ background: 'linear-gradient(135deg,#1D4ED8,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+      >
+        {display}
+      </div>
+      <div className="text-[0.72rem] text-slate-400 mt-1 font-medium">{stat.label}</div>
     </div>
   )
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function Landing({ onLogin, onRegister }) {
-  const [menuOpen,    setMenuOpen]    = useState(false)
-  const [scrolled,    setScrolled]    = useState(false)
-  const [heroTab,     setHeroTab]     = useState('dashboard')
-  const [userChanged, setUserChanged] = useState(false)
+  const [menuOpen,      setMenuOpen]      = useState(false)
+  const [scrolled,      setScrolled]      = useState(false)
+  const [heroTab,       setHeroTab]       = useState('dashboard')
+  const [userChanged,   setUserChanged]   = useState(false)
+  const [starsVisible,  setStarsVisible]  = useState(false)
+  const [statsVisible,  setStatsVisible]  = useState(false)
+  const [showBackTop,   setShowBackTop]   = useState(false)
+  const [mousePos,      setMousePos]      = useState({ x: 0, y: 0 })
 
+  const heroRef  = useRef(null)
+  const statsRef = useRef(null)
+
+  // Injetar keyframes globais
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', handler)
+    const style = document.createElement('style')
+    style.id = 'landing-animations'
+    style.textContent = GLOBAL_STYLES
+    if (!document.getElementById('landing-animations')) {
+      document.head.appendChild(style)
+    }
+    return () => document.getElementById('landing-animations')?.remove()
+  }, [])
+
+  // Nav scroll + back-to-top visibility
+  useEffect(() => {
+    const handler = () => {
+      setScrolled(window.scrollY > 20)
+      setShowBackTop(window.scrollY > 600)
+    }
+    window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
-  // Auto-rotaciona tabs do hero (pausa se o usuário clicou)
+  // Stars wave on mount
+  useEffect(() => {
+    const t = setTimeout(() => setStarsVisible(true), 700)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Stats count-up observer
+  useEffect(() => {
+    if (!statsRef.current) return
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setStatsVisible(true); obs.disconnect() }
+    }, { threshold: 0.3 })
+    obs.observe(statsRef.current)
+    return () => obs.disconnect()
+  }, [])
+
+  // Hero parallax on mousemove
+  useEffect(() => {
+    const handler = (e) => {
+      setMousePos({ x: e.clientX / window.innerWidth - 0.5, y: e.clientY / window.innerHeight - 0.5 })
+    }
+    window.addEventListener('mousemove', handler, { passive: true })
+    return () => window.removeEventListener('mousemove', handler)
+  }, [])
+
+  // Scroll reveal for sections
+  useEffect(() => {
+    const els = document.querySelectorAll('.section-reveal')
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target) } })
+    }, { threshold: 0.07 })
+    els.forEach(el => obs.observe(el))
+    return () => obs.disconnect()
+  }, [])
+
+  // Hero tab auto-rotate
   useEffect(() => {
     if (userChanged) return
     const ids = HERO_TABS.map(t => t.id)
@@ -366,27 +614,24 @@ export default function Landing({ onLogin, onRegister }) {
     return () => clearInterval(t)
   }, [userChanged])
 
-  function handleHeroTab(id) {
-    setHeroTab(id)
-    setUserChanged(true)
-  }
+  function handleHeroTab(id) { setHeroTab(id); setUserChanged(true) }
 
   const activeTabMeta = HERO_TABS.find(t => t.id === heroTab)
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   return (
     <div className="min-h-screen font-sans" style={{ background: '#F8FAFC' }}>
 
-      {/* ════════════════════════════════════════════════════════════════
-          NAVBAR
-      ════════════════════════════════════════════════════════════════ */}
+      {/* ════════ NAVBAR ════════ */}
       <nav
         className="fixed top-0 left-0 right-0 z-50"
         style={{
-          background: scrolled ? 'rgba(255,255,255,0.93)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(20px)' : 'none',
+          background: scrolled ? 'rgba(255,255,255,0.96)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(28px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(28px)' : 'none',
           borderBottom: scrolled ? '1px solid rgba(0,0,0,0.06)' : 'none',
-          boxShadow: scrolled ? '0 2px 20px rgba(0,0,0,0.06)' : 'none',
-          transition: 'all 0.25s ease',
+          boxShadow: scrolled ? '0 2px 24px rgba(0,0,0,0.07)' : 'none',
+          transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
         }}
       >
         <div className="max-w-6xl mx-auto px-6 h-[64px] flex items-center justify-between">
@@ -415,8 +660,10 @@ export default function Landing({ onLogin, onRegister }) {
               Entrar
             </button>
             <button onClick={onRegister}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[0.82rem] font-bold text-white transition-all hover:opacity-90 hover:-translate-y-px"
-              style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}>
+              className="btn-shine flex items-center gap-1.5 px-4 py-2 rounded-xl text-[0.82rem] font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)', transition: 'opacity 0.2s, transform 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.opacity = '0.92' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.opacity = '' }}>
               Criar conta grátis <ArrowRight size={13} />
             </button>
           </div>
@@ -442,12 +689,45 @@ export default function Landing({ onLogin, onRegister }) {
         )}
       </nav>
 
-      {/* ════════════════════════════════════════════════════════════════
-          HERO
-      ════════════════════════════════════════════════════════════════ */}
-      <section className="pt-[100px] pb-20 px-6 max-w-6xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-14 items-center">
+      {/* ════════ HERO ════════ */}
+      <section ref={heroRef} className="pt-[100px] pb-20 px-6 max-w-6xl mx-auto relative overflow-hidden">
 
+        {/* floating blobs com parallax */}
+        {!reducedMotion && (
+          <>
+            <div className="floating-blob absolute pointer-events-none rounded-full hidden lg:block"
+              style={{
+                width: 200, height: 200,
+                background: 'radial-gradient(circle, rgba(37,99,235,0.10), transparent 70%)',
+                top: '10%', right: '5%',
+                transform: `translate(${mousePos.x * 22}px, ${mousePos.y * 22}px)`,
+                animation: 'floatA 9s ease-in-out infinite',
+                transition: 'transform 0.12s ease-out',
+              }} />
+            <div className="floating-blob absolute pointer-events-none rounded-full hidden lg:block"
+              style={{
+                width: 130, height: 130,
+                background: 'radial-gradient(circle, rgba(6,182,212,0.10), transparent 70%)',
+                top: '55%', right: '25%',
+                transform: `translate(${mousePos.x * 14}px, ${mousePos.y * 14}px)`,
+                animation: 'floatA 12s 2s ease-in-out infinite',
+                transition: 'transform 0.18s ease-out',
+              }} />
+            <div className="floating-blob absolute pointer-events-none hidden lg:block"
+              style={{
+                width: 56, height: 56,
+                background: 'rgba(59,130,246,0.07)',
+                border: '1px solid rgba(59,130,246,0.18)',
+                borderRadius: 14,
+                top: '75%', right: '8%',
+                transform: `translate(${mousePos.x * 8}px, ${mousePos.y * 8}px)`,
+                animation: 'floatB 7s ease-in-out infinite',
+                transition: 'transform 0.22s ease-out',
+              }} />
+          </>
+        )}
+
+        <div className="grid lg:grid-cols-2 gap-14 items-center">
           {/* Texto */}
           <div>
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[0.75rem] font-semibold mb-6"
@@ -472,8 +752,14 @@ export default function Landing({ onLogin, onRegister }) {
 
             <div className="flex items-center gap-3 flex-wrap">
               <button onClick={onRegister}
-                className="flex items-center gap-2 px-6 py-3.5 rounded-xl text-[0.9rem] font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5"
-                style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)', boxShadow: '0 6px 24px rgba(37,99,235,0.4)' }}>
+                className="btn-shine flex items-center gap-2 px-6 py-3.5 rounded-xl text-[0.9rem] font-bold text-white"
+                style={{
+                  background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)',
+                  boxShadow: '0 6px 24px rgba(37,99,235,0.4)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(37,99,235,0.5)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 6px 24px rgba(37,99,235,0.4)' }}>
                 <Zap size={15} fill="white" />
                 Começar grátis
               </button>
@@ -486,16 +772,28 @@ export default function Landing({ onLogin, onRegister }) {
 
             <div className="flex items-center gap-3 mt-8">
               <div className="flex -space-x-2">
-                {['#1D4ED8', '#0891B2', '#059669', '#7C3AED'].map((c, i) => (
+                {[
+                  ['#1D4ED8','#3B82F6','MO'],
+                  ['#0891B2','#06B6D4','EC'],
+                  ['#059669','#10B981','RA'],
+                  ['#7C3AED','#A855F7','PL'],
+                ].map(([c1, c2, label], i) => (
                   <div key={i} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[0.6rem] font-bold text-white"
-                    style={{ background: c }}>
-                    {['MO', 'EC', 'RA', 'PL'][i]}
+                    style={{ background: `linear-gradient(135deg,${c1},${c2})` }}>
+                    {label}
                   </div>
                 ))}
               </div>
               <div className="flex items-center gap-1.5 text-[0.78rem] text-slate-500">
                 <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => <Star key={i} size={11} className="text-amber-400" fill="#FBBF24" />)}
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={11}
+                      style={{
+                        color: '#FBBF24', fill: '#FBBF24',
+                        animation: starsVisible && !reducedMotion ? `starWave 0.5s ease ${i * 0.12}s both` : 'none',
+                        display: 'inline-block',
+                      }} />
+                  ))}
                 </div>
                 <span><strong className="text-slate-700">4.9/5</strong> · Usado por 200+ profissionais</span>
               </div>
@@ -504,18 +802,11 @@ export default function Landing({ onLogin, onRegister }) {
 
           {/* Hero Window */}
           <div className="relative hidden lg:block">
-            {/* Glow atrás */}
             <div className="absolute inset-0 rounded-3xl blur-3xl opacity-20"
               style={{ background: `linear-gradient(135deg,#1D4ED8,${activeTabMeta?.color || '#06B6D4'})`, transform: 'scale(0.9) translateY(20px)', transition: 'background 0.6s ease' }} />
 
             <div className="relative rounded-3xl overflow-hidden"
-              style={{
-                background: 'linear-gradient(160deg,#0B1628,#060E20)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 32px 80px rgba(0,0,0,0.45)',
-              }}>
-
-              {/* Window chrome */}
+              style={{ background: 'linear-gradient(160deg,#0B1628,#060E20)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.45)' }}>
               <div className="flex items-center gap-2 px-5 py-3"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="flex gap-1.5">
@@ -531,9 +822,7 @@ export default function Landing({ onLogin, onRegister }) {
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="flex gap-0 px-3 pt-2"
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="flex gap-0 px-3 pt-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 {HERO_TABS.map(tab => {
                   const isActive = heroTab === tab.id
                   return (
@@ -541,8 +830,7 @@ export default function Landing({ onLogin, onRegister }) {
                       className="flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-[0.65rem] font-semibold transition-all"
                       style={isActive
                         ? { background: 'rgba(255,255,255,0.05)', color: tab.color, borderBottom: `2px solid ${tab.color}`, marginBottom: -1 }
-                        : { color: 'rgba(255,255,255,0.22)', borderBottom: '2px solid transparent', marginBottom: -1 }
-                      }>
+                        : { color: 'rgba(255,255,255,0.22)', borderBottom: '2px solid transparent', marginBottom: -1 }}>
                       <tab.icon size={10} />
                       {tab.label}
                     </button>
@@ -550,15 +838,10 @@ export default function Landing({ onLogin, onRegister }) {
                 })}
               </div>
 
-              {/* Content */}
               <div style={{ minHeight: 300 }}>
-                {heroTab === 'dashboard'
-                  ? <DashboardView />
-                  : <ChatView agent={AGENT_MAP[heroTab]} />
-                }
+                {heroTab === 'dashboard' ? <DashboardView /> : <ChatView agent={AGENT_MAP[heroTab]} />}
               </div>
 
-              {/* Input bar (apenas para agentes) */}
               {heroTab !== 'dashboard' && (
                 <div className="px-3 pb-3">
                   <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
@@ -579,25 +862,15 @@ export default function Landing({ onLogin, onRegister }) {
           </div>
         </div>
 
-        {/* Stats bar */}
-        <div className="mt-16 pt-8 grid grid-cols-2 md:grid-cols-4 gap-6"
+        {/* Stats */}
+        <div ref={statsRef} className="mt-16 pt-8 grid grid-cols-2 md:grid-cols-4 gap-6"
           style={{ borderTop: '1px solid rgba(0,0,0,0.07)' }}>
-          {STATS.map(s => (
-            <div key={s.label} className="text-center group cursor-default">
-              <div className="text-[1.6rem] font-black text-slate-900 leading-none transition-transform group-hover:scale-110"
-                style={{ background: 'linear-gradient(135deg,#1D4ED8,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                {s.value}
-              </div>
-              <div className="text-[0.72rem] text-slate-400 mt-1 font-medium">{s.label}</div>
-            </div>
-          ))}
+          {STATS.map(s => <StatItem key={s.label} stat={s} isVisible={statsVisible} />)}
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          NICHOS
-      ════════════════════════════════════════════════════════════════ */}
-      <section id="recursos" className="py-20 px-6"
+      {/* ════════ NICHOS ════════ */}
+      <section id="recursos" className="py-20 px-6 section-reveal"
         style={{ background: 'linear-gradient(135deg,#060E20,#0A1628)' }}>
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-[0.72rem] font-bold text-blue-400 uppercase tracking-widest mb-3">Nichos Atendidos</p>
@@ -616,10 +889,8 @@ export default function Landing({ onLogin, onRegister }) {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          AGENTES
-      ════════════════════════════════════════════════════════════════ */}
-      <section id="agentes" className="py-20 px-6 max-w-6xl mx-auto">
+      {/* ════════ AGENTES ════════ */}
+      <section id="agentes" className="py-20 px-6 max-w-6xl mx-auto section-reveal">
         <div className="text-center mb-14">
           <p className="text-[0.72rem] font-bold text-blue-600 uppercase tracking-widest mb-3">Inteligência Aplicada</p>
           <h2 className="text-[2.2rem] font-black text-slate-900 leading-tight">
@@ -632,16 +903,13 @@ export default function Landing({ onLogin, onRegister }) {
             Cada agente é treinado com o conhecimento técnico do setor. Sem respostas genéricas.
           </p>
         </div>
-
         <div className="grid md:grid-cols-3 gap-6">
           {AGENTS.map((ag, i) => <AgentCard key={i} ag={ag} />)}
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          PLANOS
-      ════════════════════════════════════════════════════════════════ */}
-      <section id="planos" className="py-20 px-6"
+      {/* ════════ PLANOS ════════ */}
+      <section id="planos" className="py-20 px-6 section-reveal"
         style={{ background: 'linear-gradient(145deg,#EEF2FF,#F0F9FF)' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
@@ -651,83 +919,77 @@ export default function Landing({ onLogin, onRegister }) {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {PLANS.map(plan => (
-              <div key={plan.name}
-                className="rounded-2xl p-7 flex flex-col relative"
-                style={{
-                  background: plan.highlight ? 'linear-gradient(160deg,#060E20,#0A1628)' : '#fff',
-                  border: plan.highlight ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(0,0,0,0.07)',
-                  boxShadow: plan.highlight ? '0 8px 40px rgba(37,99,235,0.3)' : '0 2px 12px rgba(0,0,0,0.06)',
-                }}>
-
-                {plan.highlight && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[0.7rem] font-black text-white"
-                    style={{ background: 'linear-gradient(135deg,#1D4ED8,#06B6D4)', boxShadow: '0 4px 12px rgba(37,99,235,0.5)' }}>
-                    MAIS POPULAR
+            {PLANS.map(plan => {
+              const inner = (
+                <div
+                  key={plan.name}
+                  className={`rounded-2xl p-7 flex flex-col relative h-full transition-all duration-300 ${plan.highlight ? '' : 'hover:-translate-y-1'}`}
+                  style={{
+                    background: plan.highlight ? 'linear-gradient(160deg,#060E20,#0A1628)' : '#fff',
+                    border: plan.highlight ? 'none' : '1px solid rgba(0,0,0,0.07)',
+                    boxShadow: plan.highlight ? 'none' : '0 2px 12px rgba(0,0,0,0.06)',
+                  }}
+                  onMouseEnter={e => { if (!plan.highlight) e.currentTarget.style.boxShadow = '0 16px 40px rgba(37,99,235,0.12)' }}
+                  onMouseLeave={e => { if (!plan.highlight) e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)' }}
+                >
+                  {plan.highlight && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[0.7rem] font-black text-white z-10"
+                      style={{ background: 'linear-gradient(135deg,#1D4ED8,#06B6D4)', boxShadow: '0 4px 12px rgba(37,99,235,0.5)' }}>
+                      MAIS POPULAR
+                    </div>
+                  )}
+                  <div className={`text-[0.78rem] font-bold uppercase tracking-widest mb-3 ${plan.highlight ? 'text-blue-400' : 'text-slate-400'}`}>
+                    {plan.name}
                   </div>
-                )}
+                  <div className="flex items-end gap-1 mb-1">
+                    <span className={`text-[2.2rem] font-black leading-none ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>{plan.price}</span>
+                    <span className={`text-[0.85rem] mb-1 ${plan.highlight ? 'text-white/50' : 'text-slate-400'}`}>{plan.period}</span>
+                  </div>
+                  <p className={`text-[0.78rem] mb-6 ${plan.highlight ? 'text-white/50' : 'text-slate-500'}`}>{plan.desc}</p>
 
-                <div className={`text-[0.78rem] font-bold uppercase tracking-widest mb-3 ${plan.highlight ? 'text-blue-400' : 'text-slate-400'}`}>
-                  {plan.name}
+                  <ul className="space-y-2.5 flex-1 mb-7">
+                    {plan.features.map(f => (
+                      <li key={f} className={`flex items-center gap-2.5 text-[0.8rem] ${plan.highlight ? 'text-white/80' : 'text-slate-600'}`}>
+                        <Check size={14} className={plan.highlight ? 'text-blue-400' : 'text-emerald-500'} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button onClick={onRegister}
+                    className={`btn-shine w-full py-3 rounded-xl text-[0.85rem] font-bold transition-all hover:opacity-90 hover:-translate-y-0.5 ${plan.highlight ? '' : ''}`}
+                    style={plan.highlight
+                      ? { background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#fff', boxShadow: '0 4px 16px rgba(37,99,235,0.4)' }
+                      : { background: 'rgba(37,99,235,0.07)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.15)' }
+                    }>
+                    {plan.cta}
+                  </button>
                 </div>
-                <div className="flex items-end gap-1 mb-1">
-                  <span className={`text-[2.2rem] font-black leading-none ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>{plan.price}</span>
-                  <span className={`text-[0.85rem] mb-1 ${plan.highlight ? 'text-white/50' : 'text-slate-400'}`}>{plan.period}</span>
+              )
+
+              return plan.highlight ? (
+                <div key={plan.name} className="plan-conic-wrap relative" style={{ minHeight: 0 }}>
+                  {inner}
                 </div>
-                <p className={`text-[0.78rem] mb-6 ${plan.highlight ? 'text-white/50' : 'text-slate-500'}`}>{plan.desc}</p>
-
-                <ul className="space-y-2.5 flex-1 mb-7">
-                  {plan.features.map(f => (
-                    <li key={f} className={`flex items-center gap-2.5 text-[0.8rem] ${plan.highlight ? 'text-white/80' : 'text-slate-600'}`}>
-                      <Check size={14} className={plan.highlight ? 'text-blue-400' : 'text-emerald-500'} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <button onClick={onRegister}
-                  className="w-full py-3 rounded-xl text-[0.85rem] font-bold transition-all hover:opacity-90 hover:-translate-y-0.5"
-                  style={plan.highlight
-                    ? { background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#fff', boxShadow: '0 4px 16px rgba(37,99,235,0.4)' }
-                    : { background: 'rgba(37,99,235,0.07)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.15)' }
-                  }>
-                  {plan.cta}
-                </button>
-              </div>
-            ))}
+              ) : inner
+            })}
           </div>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          DEPOIMENTOS
-      ════════════════════════════════════════════════════════════════ */}
-      <section id="depoimentos" className="py-20 px-6 max-w-6xl mx-auto">
+      {/* ════════ DEPOIMENTOS ════════ */}
+      <section id="depoimentos" className="py-20 px-6 max-w-6xl mx-auto section-reveal">
         <div className="text-center mb-12">
           <p className="text-[0.72rem] font-bold text-blue-600 uppercase tracking-widest mb-3">Depoimentos</p>
           <h2 className="text-[2.2rem] font-black text-slate-900">O que dizem nossos clientes</h2>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((t, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 transition-all hover:-translate-y-1"
-              style={{ border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-              <div className="flex gap-0.5 mb-4">
-                {[...Array(t.stars)].map((_, j) => <Star key={j} size={13} className="text-amber-400" fill="#FBBF24" />)}
-              </div>
-              <p className="text-[0.85rem] text-slate-600 leading-relaxed mb-5">"{t.text}"</p>
-              <div>
-                <div className="text-[0.82rem] font-bold text-slate-900">{t.name}</div>
-                <div className="text-[0.72rem] text-slate-400 mt-0.5">{t.role}</div>
-              </div>
-            </div>
-          ))}
+          {TESTIMONIALS.map((t, i) => <TestimonialCard key={i} t={t} />)}
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          CTA FINAL
-      ════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 px-6" style={{ background: 'linear-gradient(135deg,#060E20,#0A1628)' }}>
+      {/* ════════ CTA FINAL ════════ */}
+      <section className="py-20 px-6 section-reveal" style={{ background: 'linear-gradient(135deg,#060E20,#0A1628)' }}>
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-[2.5rem] font-black text-white leading-tight mb-4">
             Pronto para escalar<br />
@@ -737,8 +999,14 @@ export default function Landing({ onLogin, onRegister }) {
           </h2>
           <p className="text-white/50 text-[0.9rem] mb-8">Comece grátis hoje. Sem cartão de crédito. Sem compromisso.</p>
           <button onClick={onRegister}
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-[0.95rem] font-black text-white transition-all hover:opacity-90 hover:-translate-y-0.5"
-            style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', boxShadow: '0 8px 32px rgba(37,99,235,0.5)' }}>
+            className="btn-shine inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-[0.95rem] font-black text-white"
+            style={{
+              background: 'linear-gradient(135deg,#2563EB,#3B82F6)',
+              boxShadow: '0 8px 32px rgba(37,99,235,0.5)',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 14px 40px rgba(37,99,235,0.6)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 8px 32px rgba(37,99,235,0.5)' }}>
             <Zap size={18} fill="white" />
             Criar minha conta grátis
           </button>
@@ -746,9 +1014,7 @@ export default function Landing({ onLogin, onRegister }) {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          FOOTER
-      ════════════════════════════════════════════════════════════════ */}
+      {/* ════════ FOOTER ════════ */}
       <footer className="py-8 px-6 border-t border-slate-100">
         <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-2">
@@ -769,12 +1035,28 @@ export default function Landing({ onLogin, onRegister }) {
         </div>
       </footer>
 
-      {/* Botão flutuante */}
+      {/* ════════ BOTÃO FLUTUANTE (chat) ════════ */}
       <button onClick={onRegister}
         className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 rounded-2xl text-[0.82rem] font-bold text-white z-40 transition-all hover:opacity-90 hover:-translate-y-0.5"
         style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', boxShadow: '0 8px 24px rgba(37,99,235,0.45)' }}>
         <MessageSquare size={16} />
         Falar com Engenharia
+      </button>
+
+      {/* ════════ BACK TO TOP ════════ */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Voltar ao topo"
+        className="fixed bottom-6 left-6 z-40 w-10 h-10 rounded-xl flex items-center justify-center text-white"
+        style={{
+          background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)',
+          boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
+          opacity: showBackTop ? 1 : 0,
+          transform: showBackTop ? 'translateY(0)' : 'translateY(10px)',
+          pointerEvents: showBackTop ? 'auto' : 'none',
+          transition: 'opacity 0.3s, transform 0.3s',
+        }}>
+        <ChevronUp size={18} />
       </button>
     </div>
   )
