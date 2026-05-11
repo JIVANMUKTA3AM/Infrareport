@@ -5,9 +5,9 @@ import {
   Thermometer, Camera, Wifi, Lock, Zap as ZapElec,
   Bell, Settings2, Radio, FileText,
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
-const USER_ID  = 'USER_UUID_AQUI' // TODO: auth
 
 // ── Nichos ──────────────────────────────────────────────────────────────────
 const NICHES = [
@@ -200,6 +200,7 @@ function WelcomeScreen({ onPrompt }) {
 
 // ── Componente principal ────────────────────────────────────────────────────
 export default function AgenteTecnico() {
+  const { user } = useAuth()
   const [messages,    setMessages]    = useState([])
   const [input,       setInput]       = useState('')
   const [loading,     setLoading]     = useState(false)
@@ -227,7 +228,7 @@ export default function AgenteTecnico() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: USER_ID,
+          user_id: user?.auth_id,
           message: msg,
           niche: niche,
           history: messages.map(m => ({ role: m.role, content: m.content })),
