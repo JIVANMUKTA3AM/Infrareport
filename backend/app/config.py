@@ -10,9 +10,9 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_user: str
     smtp_password: str
-    evolution_api_url: str
-    evolution_api_key: str
-    evolution_instance: str = "infrareport"
+    waha_url: str = "http://localhost:3000"
+    waha_api_key: str = ""
+    waha_session: str = "default"
     app_secret: str
     storage_path: str = "./storage"
     # Google OAuth (Gmail integration)
