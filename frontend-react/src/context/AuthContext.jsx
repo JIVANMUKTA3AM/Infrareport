@@ -12,12 +12,18 @@ export function AuthProvider({ children }) {
   // Carrega perfil da tabela users a partir do auth.uid
   async function loadProfile(authUser) {
     if (!authUser) { setUser(null); return }
-    const { data } = await supabase
+    const { data: userData } = await supabase
       .from('users')
-      .select('*, plan_limits(label, proposals_limit, whatsapp_agent, multi_user)')
+      .select('*')
       .eq('auth_id', authUser.id)
       .single()
-    setUser(data || null)
+    if (!userData) { setUser(null); return }
+    const { data: planData } = await supabase
+      .from('plan_limits')
+      .select('label, proposals_limit, whatsapp_agent, multi_user')
+      .eq('plan', userData.plan)
+      .single()
+    setUser({ ...userData, plan_limits: planData })
   }
 
   useEffect(() => {
