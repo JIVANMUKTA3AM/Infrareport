@@ -221,7 +221,7 @@ async def run_technical_agent(req: TechnicalChatRequest) -> TechnicalChatRespons
     # ── 4. Chama Claude ───────────────────────────────────────
     client = anthropic.Anthropic(api_key=cfg.anthropic_api_key)
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=2048,
         system=system,
         messages=messages,

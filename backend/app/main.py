@@ -25,6 +25,10 @@ app.include_router(dashboard.router)
 app.include_router(integrations.router)
 
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "infrareport-api"}
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "infrareport-api"}

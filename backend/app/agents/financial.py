@@ -37,7 +37,7 @@ async def run_financial_agent(req: FinancialMessageRequest) -> FinancialMessageR
     # ── 1. Claude extrai dados da mensagem ─────────────────
     client = anthropic.Anthropic(api_key=cfg.anthropic_api_key)
     message = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=256,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": req.message}],
