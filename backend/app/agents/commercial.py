@@ -109,7 +109,7 @@ async def run_commercial_agent(req: ProposalRequest) -> ProposalResponse:
 
     return ProposalResponse(
         proposal_id=proposal_id,
-        docx_url=docx_path,
+        docx_url=f"/api/proposals/{proposal_id}/download",
         total_value=total_value,
         email_sent=email_sent,
         message=(

@@ -18,6 +18,8 @@ class ProposalRequest(BaseModel):
     equipments: list[Equipment]
     notes: Optional[str] = None
     project_id: Optional[UUID] = None
+    logo_base64: Optional[str] = None  # data:image/...;base64,<data>
+    company_name: Optional[str] = None
 
 
 class ProposalResponse(BaseModel):

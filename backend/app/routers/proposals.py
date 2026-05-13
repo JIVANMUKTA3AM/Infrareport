@@ -1,9 +1,12 @@
+import os
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
 from typing import Optional
 from uuid import UUID
 from app.models.proposal import ProposalRequest, ProposalResponse
 from app.agents.commercial import run_commercial_agent
 from app.database import get_supabase
+from app.config import get_settings
 
 router = APIRouter(prefix="/api/proposals", tags=["proposals"])
 
@@ -42,6 +45,20 @@ async def update_proposal_status(proposal_id: UUID, body: dict):
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/{proposal_id}/download")
+async def download_proposal(proposal_id: UUID):
+    """Faz o download do .docx de uma proposta."""
+    cfg = get_settings()
+    file_path = os.path.join(cfg.storage_path, f"proposta_{proposal_id}.docx")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    return FileResponse(
+        file_path,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=f"proposta_{proposal_id}.docx",
+    )
 
 
 @router.post("/generate", response_model=ProposalResponse)

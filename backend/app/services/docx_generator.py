@@ -2,13 +2,15 @@
 Gera proposta comercial em .docx usando python-docx.
 Salva o arquivo em STORAGE_PATH e retorna o caminho.
 """
+import base64
+import io
 import os
 from datetime import date
 from pathlib import Path
 from uuid import UUID
 
 from docx import Document
-from docx.shared import Pt, RGBColor, Cm
+from docx.shared import Pt, RGBColor, Cm, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from app.config import get_settings
@@ -36,8 +38,21 @@ def generate_proposal_docx(req: ProposalRequest, proposal_id: UUID) -> tuple[str
         section.left_margin   = Cm(2.5)
         section.right_margin  = Cm(2.5)
 
+    # ── Logo da empresa (opcional) ─────────────
+    if req.logo_base64:
+        try:
+            raw = req.logo_base64.split(",")[-1]  # remove "data:image/...;base64," prefix
+            image_stream = io.BytesIO(base64.b64decode(raw))
+            logo_para = doc.add_paragraph()
+            logo_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            logo_para.add_run().add_picture(image_stream, width=Inches(2))
+            doc.add_paragraph()
+        except Exception:
+            pass
+
     # ── Cabeçalho ──────────────────────────────
-    h = doc.add_heading("InfraReport", level=1)
+    company = req.company_name or "InfraReport"
+    h = doc.add_heading(company, level=1)
     h.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = h.runs[0]
     run.font.color.rgb = RGBColor(0x1E, 0x40, 0xAF)

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { FileText, Plus, Trash2, Send, Loader2, CheckCircle, ChevronDown } from 'lucide-react'
+import { FileText, Plus, Trash2, Send, Loader2, CheckCircle, ChevronDown, ImagePlus, X } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -23,15 +23,26 @@ export default function AgenteComercial() {
   const [success,  setSuccess]  = useState(null)
   const [error,    setError]    = useState('')
   const [form, setForm] = useState({
-    client_name:  '',
-    client_email: '',
-    service:      '',
-    segment:      'ac',
-    notes:        '',
+    client_name:   '',
+    client_email:  '',
+    service:       '',
+    segment:       'ac',
+    notes:         '',
+    company_name:  '',
   })
   const [equipments, setEquipments] = useState([{ ...EMPTY_EQUIP }])
+  const [logoBase64, setLogoBase64] = useState(null)
+  const logoInputRef = useRef(null)
 
   const setField = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
+
+  function handleLogoChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => setLogoBase64(ev.target.result)
+    reader.readAsDataURL(file)
+  }
 
   function addEquip() { setEquipments(e => [...e, { ...EMPTY_EQUIP }]) }
   function removeEquip(i) { setEquipments(e => e.filter((_, idx) => idx !== i)) }
@@ -56,6 +67,7 @@ export default function AgenteComercial() {
             quantity:    Number(e.quantity),
             unit_price:  Number(e.unit_price),
           })),
+          logo_base64:  logoBase64 || null,
         }),
       })
       if (!res.ok) {
@@ -94,13 +106,13 @@ export default function AgenteComercial() {
           </div>
         </div>
         {success.docx_url && (
-          <a href={success.docx_url} target="_blank" rel="noreferrer"
+          <a href={`${API_BASE}${success.docx_url}`} target="_blank" rel="noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[0.85rem] font-bold text-white mb-4 w-full justify-center"
             style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)', boxShadow: '0 4px 16px rgba(37,99,235,0.35)' }}>
             <FileText size={15} /> Baixar proposta .docx
           </a>
         )}
-        <button onClick={() => { setSuccess(null); setForm({ client_name:'', client_email:'', service:'', segment:'ac', notes:'' }); setEquipments([{...EMPTY_EQUIP}]) }}
+        <button onClick={() => { setSuccess(null); setForm({ client_name:'', client_email:'', service:'', segment:'ac', notes:'', company_name:'' }); setEquipments([{...EMPTY_EQUIP}]); setLogoBase64(null) }}
           className="text-[0.8rem] text-slate-400 hover:text-slate-600 transition-colors">
           Gerar nova proposta
         </button>
@@ -150,6 +162,47 @@ export default function AgenteComercial() {
             <Field label="Descrição do serviço" value={form.service} onChange={setField('service')} placeholder="Instalação de sistema CFTV" required />
           </div>
           <Field label="Observações (opcional)" value={form.notes} onChange={setField('notes')} placeholder="Informações adicionais para a proposta..." />
+        </Section>
+
+        {/* Identidade Visual */}
+        <Section title="Identidade Visual (opcional)">
+          <div className="grid grid-cols-2 gap-3 items-start">
+            {/* Upload de logo */}
+            <div>
+              <label className="block text-[0.73rem] font-bold text-slate-600 mb-1.5">Logo da empresa</label>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                className="hidden"
+                onChange={handleLogoChange}
+              />
+              {logoBase64 ? (
+                <div className="relative w-full h-[72px] rounded-xl border border-blue-200 bg-blue-50 flex items-center justify-center overflow-hidden">
+                  <img src={logoBase64} alt="logo" className="max-h-[56px] max-w-full object-contain" />
+                  <button type="button" onClick={() => { setLogoBase64(null); logoInputRef.current.value = '' }}
+                    className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 shadow-sm">
+                    <X size={10} />
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => logoInputRef.current.click()}
+                  className="w-full h-[72px] rounded-xl border-2 border-dashed border-blue-200 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors bg-white">
+                  <ImagePlus size={18} />
+                  <span className="text-[0.7rem] font-medium">Clique para enviar</span>
+                </button>
+              )}
+              <p className="text-[0.66rem] text-slate-400 mt-1">PNG, JPG ou SVG · máx 2 MB</p>
+            </div>
+
+            {/* Nome da empresa */}
+            <Field
+              label="Nome da empresa (no docx)"
+              value={form.company_name}
+              onChange={setField('company_name')}
+              placeholder="Ex: TechInfra Soluções"
+            />
+          </div>
         </Section>
 
         {/* Equipamentos */}
