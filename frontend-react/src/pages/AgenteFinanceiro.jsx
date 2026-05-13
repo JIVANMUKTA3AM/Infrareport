@@ -105,7 +105,7 @@ export default function AgenteFinanceiro() {
       const res = await fetch(`${API_BASE}/api/financial/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user?.auth_id, message: msg }),
+        body: JSON.stringify({ user_id: user?.id, message: msg }),
       })
 
       if (!res.ok) throw new Error(`Erro ${res.status}`)

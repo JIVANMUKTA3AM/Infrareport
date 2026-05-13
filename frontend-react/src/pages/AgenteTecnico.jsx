@@ -228,7 +228,7 @@ export default function AgenteTecnico() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: user?.auth_id,
+          user_id: user?.id,
           message: msg,
           niche: niche,
           history: messages.map(m => ({ role: m.role, content: m.content })),

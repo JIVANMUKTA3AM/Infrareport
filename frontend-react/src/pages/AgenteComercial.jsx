@@ -49,7 +49,7 @@ export default function AgenteComercial() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: user?.auth_id,
+          user_id: user?.id,
           ...form,
           equipments: equipments.map(e => ({
             description: e.description,
