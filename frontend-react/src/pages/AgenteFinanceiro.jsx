@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, RefreshCw, ChevronRight, MessageSquarePlus, DollarSign, ArrowUpCircle, ArrowDownCircle, PieChart } from 'lucide-react'
 import { KPI_CURRENT } from '../data/mock'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
-const USER_ID  = 'USER_UUID_AQUI' // TODO: auth
 
 const QUICK_PROMPTS = [
   { label: 'Qual meu saldo atual?', prompt: 'Qual meu saldo atual?' },
@@ -78,6 +78,7 @@ function TypingIndicator() {
 }
 
 export default function AgenteFinanceiro() {
+  const { user } = useAuth()
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Olá! 👋\nSou seu **Agente Financeiro.** Posso te ajudar com consultas, lançamentos rápidos em linguagem natural e relatórios.\n\nExperimente dizer: *"Gastei R$200 em gasolina pro carro"* ou *"Qual meu saldo?"*' }
   ])
@@ -104,7 +105,7 @@ export default function AgenteFinanceiro() {
       const res = await fetch(`${API_BASE}/api/financial/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: USER_ID, message: msg }),
+        body: JSON.stringify({ user_id: user?.auth_id, message: msg }),
       })
 
       if (!res.ok) throw new Error(`Erro ${res.status}`)

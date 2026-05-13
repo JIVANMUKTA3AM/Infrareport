@@ -6,9 +6,10 @@ import Dashboard    from './pages/Dashboard'
 import Files        from './pages/Files'
 import AgenteTecnico  from './pages/AgenteTecnico'
 import Configuracoes  from './pages/Configuracoes'
-import Login          from './pages/Login'
-import Landing        from './pages/Landing'
-import SetNewPassword from './pages/SetNewPassword'
+import Login           from './pages/Login'
+import Landing         from './pages/Landing'
+import SetNewPassword  from './pages/SetNewPassword'
+import AgenteComercial from './pages/AgenteComercial'
 import Placeholder  from './pages/Placeholder'
 import Propostas      from './pages/Propostas'
 import AgenteFinanceiro from './pages/AgenteFinanceiro'
@@ -37,6 +38,7 @@ function PageContent({ page }) {
   if (page === 'configuracoes')   return <Configuracoes />
   if (page === 'propostas')       return <Propostas />
   if (page === 'agente-financeiro') return <AgenteFinanceiro />
+  if (page === 'agente-comercial')  return <AgenteComercial />
   return <Placeholder title={PAGE_LABELS[page] || page} />
 }
 
