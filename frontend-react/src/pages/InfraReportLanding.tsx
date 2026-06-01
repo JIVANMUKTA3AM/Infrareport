@@ -94,7 +94,7 @@ function Logo({ size = 38 }) {
 
 export default function InfraReportLanding({ onLogin, onRegister }) {
   const [scrolled, setScrolled] = useState(false);
-  const [openNiche, setOpenNiche] = useState(0);
+  const [openNiche, setOpenNiche] = useState(-1);
   const revealRefs = useRef([]);
 
   useEffect(() => {
