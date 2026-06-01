@@ -74,9 +74,9 @@ const AGENTS = [
 ];
 
 const PLANS = [
-  { name: "Starter", price: "97", period: "/mês", desc: "Para o técnico autônomo começando a escalar.", features: ["1 agente (Técnico)", "50 laudos/mês", "Propostas em .docx", "Suporte por e-mail"], cta: "Começar grátis", featured: false },
-  { name: "Pro", price: "247", period: "/mês", desc: "Para equipes que vivem de produtividade técnica.", features: ["3 agentes (Téc + Com + Fin)", "Laudos ilimitados", "Integração WhatsApp", "Controle financeiro", "Suporte prioritário"], cta: "Assinar o Pro", featured: true },
-  { name: "Scale", price: "Sob consulta", period: "", desc: "Para empresas com múltiplas frentes e times.", features: ["Tudo do Pro", "Multi-usuário", "API e webhooks", "Onboarding dedicado", "SLA garantido"], cta: "Falar com engenharia", featured: false },
+  { name: "Starter", price: "79", period: "/mês", trial: true, desc: "Para o técnico autônomo começando a escalar.", features: ["1 agente (Técnico)", "50 laudos/mês", "Propostas em .docx", "Suporte por e-mail"], cta: "Começar — 1º mês grátis", featured: false },
+  { name: "Pro", price: "189", period: "/mês", trial: true, desc: "Para equipes que vivem de produtividade técnica.", features: ["3 agentes (Téc + Com + Fin)", "Laudos ilimitados", "Integração WhatsApp", "Controle financeiro", "Suporte prioritário"], cta: "Começar — 1º mês grátis", featured: true },
+  { name: "Scale", price: "Sob consulta", period: "", trial: false, desc: "Para empresas com múltiplas frentes e times.", features: ["Tudo do Pro", "Multi-usuário", "API e webhooks", "Onboarding dedicado", "SLA garantido"], cta: "Falar com engenharia", featured: false },
 ];
 
 function NichePattern({ color }) {
@@ -336,46 +336,6 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
         </div>
       </section>
 
-      {/* AGENTS */}
-      <section className="ir-blueprint" style={{ padding: "90px 40px", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div ref={addReveal} style={{ ...revealStyle, textAlign: "center", marginBottom: 50 }}>
-            <div className="ir-mono" style={{ fontSize: 12, letterSpacing: "0.15em", color: "#38bdf8", marginBottom: 14 }}>OS ESPECIALISTAS</div>
-            <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: "-0.02em" }}>Cada agente é <span style={{ fontStyle: "italic", fontWeight: 300 }}>treinado</span> no setor</h2>
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", marginTop: 14 }}>Conhecimento técnico real. Sem respostas genéricas.</p>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }} className="ir-agent-grid">
-            {AGENTS.map((ag, i) => (
-              <div key={i} ref={addReveal} style={{ ...revealStyle, transitionDelay: `${i * 100}ms`, background: "rgba(13,18,28,0.6)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 26, position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${ag.color},transparent)` }} />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: `${ag.color}1a`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: ag.color, boxShadow: `0 0 10px ${ag.color}`, animation: "irPulse 2s ease-in-out infinite" }} />
-                  </div>
-                  <span className="ir-mono" style={{ fontSize: 10, color: "#34d399", border: "1px solid rgba(52,211,153,0.3)", padding: "3px 9px", borderRadius: 20 }}>● Ativo 24/7</span>
-                </div>
-                <div className="ir-mono" style={{ fontSize: 11, letterSpacing: "0.1em", color: ag.color, marginBottom: 6 }}>{ag.tag}</div>
-                <h3 style={{ fontSize: 19, fontWeight: 700, marginBottom: 10 }}>{ag.name}</h3>
-                <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "rgba(255,255,255,0.55)", marginBottom: 16 }}>{ag.desc}</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-                  {ag.actions.map((act, j) => (
-                    <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "rgba(255,255,255,0.72)", lineHeight: 1.45 }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ag.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><polyline points="20 6 9 17 4 12" /></svg>
-                      {act}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 12, padding: 14 }}>
-                  <div className="ir-mono" style={{ fontSize: 9, letterSpacing: "0.1em", color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>EXEMPLO REAL</div>
-                  <div style={{ background: `${ag.color}15`, borderRadius: 9, padding: "9px 12px", marginBottom: 10, fontSize: 12, lineHeight: 1.5, color: "rgba(255,255,255,0.85)" }}>{ag.q}</div>
-                  <div style={{ fontSize: 12, lineHeight: 1.55, color: "rgba(255,255,255,0.65)", padding: "0 4px" }}>{ag.a}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* DASHBOARD — VEJA POR DENTRO */}
       <section style={{ padding: "90px 40px" }}>
         <div style={{ maxWidth: 920, margin: "0 auto" }}>
@@ -458,6 +418,46 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
         </div>
       </section>
 
+      {/* AGENTS */}
+      <section className="ir-blueprint" style={{ padding: "90px 40px", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div ref={addReveal} style={{ ...revealStyle, textAlign: "center", marginBottom: 50 }}>
+            <div className="ir-mono" style={{ fontSize: 12, letterSpacing: "0.15em", color: "#38bdf8", marginBottom: 14 }}>OS ESPECIALISTAS</div>
+            <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: "-0.02em" }}>Cada agente é <span style={{ fontStyle: "italic", fontWeight: 300 }}>treinado</span> no setor</h2>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", marginTop: 14 }}>Conhecimento técnico real. Sem respostas genéricas.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }} className="ir-agent-grid">
+            {AGENTS.map((ag, i) => (
+              <div key={i} ref={addReveal} style={{ ...revealStyle, transitionDelay: `${i * 100}ms`, background: "rgba(13,18,28,0.6)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 26, position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${ag.color},transparent)` }} />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: `${ag.color}1a`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: ag.color, boxShadow: `0 0 10px ${ag.color}`, animation: "irPulse 2s ease-in-out infinite" }} />
+                  </div>
+                  <span className="ir-mono" style={{ fontSize: 10, color: "#34d399", border: "1px solid rgba(52,211,153,0.3)", padding: "3px 9px", borderRadius: 20 }}>● Ativo 24/7</span>
+                </div>
+                <div className="ir-mono" style={{ fontSize: 11, letterSpacing: "0.1em", color: ag.color, marginBottom: 6 }}>{ag.tag}</div>
+                <h3 style={{ fontSize: 19, fontWeight: 700, marginBottom: 10 }}>{ag.name}</h3>
+                <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "rgba(255,255,255,0.55)", marginBottom: 16 }}>{ag.desc}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                  {ag.actions.map((act, j) => (
+                    <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "rgba(255,255,255,0.72)", lineHeight: 1.45 }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ag.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><polyline points="20 6 9 17 4 12" /></svg>
+                      {act}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 12, padding: 14 }}>
+                  <div className="ir-mono" style={{ fontSize: 9, letterSpacing: "0.1em", color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>EXEMPLO REAL</div>
+                  <div style={{ background: `${ag.color}15`, borderRadius: 9, padding: "9px 12px", marginBottom: 10, fontSize: 12, lineHeight: 1.5, color: "rgba(255,255,255,0.85)" }}>{ag.q}</div>
+                  <div style={{ fontSize: 12, lineHeight: 1.55, color: "rgba(255,255,255,0.65)", padding: "0 4px" }}>{ag.a}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* PLANS */}
       <section style={{ padding: "90px 40px", maxWidth: 1100, margin: "0 auto" }}>
         <div ref={addReveal} style={{ ...revealStyle, textAlign: "center", marginBottom: 50 }}>
@@ -470,11 +470,17 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
               {p.featured && <div className="ir-mono" style={{ position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", fontSize: 10, letterSpacing: "0.1em", padding: "4px 12px", borderRadius: 20, fontWeight: 600 }}>MAIS POPULAR</div>}
               <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>{p.name}</h3>
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 18, minHeight: 38 }}>{p.desc}</p>
-              <div style={{ marginBottom: 22 }}>
+              <div style={{ marginBottom: p.trial ? 6 : 22 }}>
                 {p.price === "Sob consulta"
                   ? <span style={{ fontSize: 26, fontWeight: 700 }}>Sob consulta</span>
                   : <><span style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", verticalAlign: "top" }}>R$</span><span style={{ fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em" }}>{p.price}</span><span style={{ fontSize: 14, color: "rgba(255,255,255,0.5)" }}>{p.period}</span></>}
               </div>
+              {p.trial && (
+                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 20 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px #34d399" }} />
+                  <span className="ir-mono" style={{ fontSize: 11, color: "#34d399" }}>1º mês grátis · cobra só a partir do 2º</span>
+                </div>
+              )}
               <button className="ir-btn-primary" onClick={handleRegister} style={{ width: "100%", background: p.featured ? "linear-gradient(135deg,#1d4ed8,#0ea5e9)" : "rgba(255,255,255,0.06)", color: "#fff", border: p.featured ? "none" : "1px solid rgba(255,255,255,0.12)", padding: "12px 0", borderRadius: 11, fontFamily: "inherit", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 22, boxShadow: p.featured ? "0 6px 24px rgba(37,99,235,0.4)" : "none" }}>{p.cta}</button>
               <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                 {p.features.map((f, j) => (
@@ -494,7 +500,7 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
         <div ref={addReveal} style={{ ...revealStyle, maxWidth: 1000, margin: "0 auto", background: "linear-gradient(135deg,rgba(29,78,216,0.2),rgba(14,165,233,0.1))", border: "1px solid rgba(56,189,248,0.2)", borderRadius: 24, padding: "56px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 0%,rgba(56,189,248,0.15),transparent 60%)", pointerEvents: "none" }} />
           <h2 style={{ position: "relative", fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 16 }}>Pare de escrever laudo no Word.</h2>
-          <p style={{ position: "relative", fontSize: 16, color: "rgba(255,255,255,0.6)", marginBottom: 30, maxWidth: 440, margin: "0 auto 30px" }}>Comece grátis hoje. Sem cartão de crédito.</p>
+          <p style={{ position: "relative", fontSize: 16, color: "rgba(255,255,255,0.6)", marginBottom: 30, maxWidth: 440, margin: "0 auto 30px" }}>Primeiro mês grátis. Cancele quando quiser.</p>
           <button className="ir-btn-primary" onClick={handleRegister} style={{ position: "relative", background: "#fff", color: "#0a0e14", border: "none", padding: "15px 32px", borderRadius: 12, fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Criar conta grátis →</button>
         </div>
       </section>
