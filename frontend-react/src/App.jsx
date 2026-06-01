@@ -7,7 +7,7 @@ import Files        from './pages/Files'
 import AgenteTecnico  from './pages/AgenteTecnico'
 import Configuracoes  from './pages/Configuracoes'
 import Login           from './pages/Login'
-import Landing         from './pages/Landing'
+import InfraReportLanding from './pages/InfraReportLanding'
 import SetNewPassword  from './pages/SetNewPassword'
 import AgenteComercial from './pages/AgenteComercial'
 import Placeholder  from './pages/Placeholder'
@@ -88,7 +88,7 @@ function AuthenticatedApp() {
     if (view === 'login')    return <Login onBack={() => setView('landing')} defaultTab="login"    />
     if (view === 'register') return <Login onBack={() => setView('landing')} defaultTab="register" />
     return (
-      <Landing
+      <InfraReportLanding
         onLogin={()    => setView('login')}
         onRegister={() => setView('register')}
       />
