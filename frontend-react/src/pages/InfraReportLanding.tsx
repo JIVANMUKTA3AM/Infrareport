@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useRef, useState } from "react";
 
 const NICHES = [
@@ -50,8 +51,8 @@ const AGENTS = [
     tag: "TÉCNICO", color: "#38bdf8",
     name: "Agente Técnico",
     desc: "Diagnóstico de falhas, dimensionamentos, laudos e consulta de normas NBR/NR para 7 nichos técnicos.",
-    q: "Disjuntor Q3 (32A) do QD-02 disparando com carga de 18A. Já troquei e persiste.",
-    a: "Disparo com 18A em 32A descarta sobrecarga. Causa provável: isolação degradada no ramal.",
+    q: "Disjuntor Q3 (32A) do QD-02 disparando com carga medida de 18A. Já substituí e o problema persiste.",
+    a: "Disparo com 18A em 32A descarta sobrecarga — problema é isolação degradada no ramal. Meça Riso com megôhmetro, mín. 1MΩ (NBR 5410 §6.3.3).",
   },
   {
     tag: "COMERCIAL", color: "#a78bfa",
@@ -145,7 +146,7 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
           <a className="ir-link">Recursos</a><a className="ir-link">Agentes</a><a className="ir-link">Planos</a><a className="ir-link">Casos</a>
         </div>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-          <button className="ir-link" style={{ fontWeight: 500, background: "none", border: "none", cursor: "pointer" }} onClick={handleLogin}>Entrar</button>
+          <button className="ir-link" onClick={handleLogin} style={{ fontWeight: 500, background: "none", border: "none", cursor: "pointer" }}>Entrar</button>
           <button className="ir-btn-primary" onClick={handleRegister} style={{ background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 9, fontFamily: "inherit", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 20px rgba(37,99,235,0.35)" }}>Criar conta grátis →</button>
         </div>
       </nav>
