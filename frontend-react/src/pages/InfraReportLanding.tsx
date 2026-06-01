@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const NICHES = [
   {
@@ -50,21 +50,24 @@ const AGENTS = [
   {
     tag: "TÉCNICO", color: "#38bdf8",
     name: "Agente Técnico",
-    desc: "Diagnóstico de falhas, dimensionamentos, laudos e consulta de normas NBR/NR para 7 nichos técnicos.",
+    desc: "Diagnóstico de falhas, dimensionamentos e laudos com base nas normas NBR/NR de cada um dos 7 nichos.",
+    actions: ["Diagnostica falhas e indica a causa raiz", "Dimensiona componentes (cabos, disjuntores, dutos)", "Gera laudos técnicos com referência normativa", "Consulta NBR/NR específica do nicho"],
     q: "Disjuntor Q3 (32A) do QD-02 disparando com carga medida de 18A. Já substituí e o problema persiste.",
     a: "Disparo com 18A em 32A descarta sobrecarga — problema é isolação degradada no ramal. Meça Riso com megôhmetro, mín. 1MΩ (NBR 5410 §6.3.3).",
   },
   {
     tag: "COMERCIAL", color: "#a78bfa",
     name: "Agente Comercial",
-    desc: "Gera propostas profissionais em .docx com precificação validada e envia automaticamente por e-mail ao cliente.",
+    desc: "Transforma um pedido em linguagem natural numa proposta profissional pronta para enviar ao cliente.",
+    actions: ["Monta proposta com itens e precificação", "Gera o documento em .docx formatado", "Envia automaticamente por e-mail", "Acompanha status e follow-up"],
     q: "Proposta para 8 câmeras IP 4MP com NVR 16 canais no galpão da Construtora Beta.",
     a: "Proposta gerada — R$ 6.840,00. .docx enviado para contato@construtorabeta.com.br.",
   },
   {
     tag: "FINANCEIRO", color: "#34d399",
     name: "Agente Financeiro",
-    desc: "Registre movimentações em linguagem natural. O agente classifica, persiste no banco e atualiza seu saldo em tempo real.",
+    desc: "Registra movimentações em linguagem natural, classifica, persiste no banco e alimenta o dashboard em tempo real.",
+    actions: ["Registra entradas e saídas por voz/texto", "Classifica por categoria e projeto", "Calcula margem e saldo automaticamente", "Alimenta o dashboard e exporta PDF"],
     q: "Entrada de R$ 8.500 do Grupo TechPark — OS 2341, cabeamento concluído.",
     a: "R$ 8.500,00 registrado — Serviços / OS 2341. Saldo: R$ 26.350,00. Margem: 62%.",
   },
@@ -75,6 +78,29 @@ const PLANS = [
   { name: "Pro", price: "247", period: "/mês", desc: "Para equipes que vivem de produtividade técnica.", features: ["3 agentes (Téc + Com + Fin)", "Laudos ilimitados", "Integração WhatsApp", "Controle financeiro", "Suporte prioritário"], cta: "Assinar o Pro", featured: true },
   { name: "Scale", price: "Sob consulta", period: "", desc: "Para empresas com múltiplas frentes e times.", features: ["Tudo do Pro", "Multi-usuário", "API e webhooks", "Onboarding dedicado", "SLA garantido"], cta: "Falar com engenharia", featured: false },
 ];
+
+function NichePattern({ color }) {
+  const squares = React.useMemo(
+    () => Array.from({ length: 5 }, () => [Math.floor(Math.random() * 4) + 3, Math.floor(Math.random() * 5) + 1]),
+    []
+  );
+  const pid = React.useId();
+  return (
+    <div style={{ position: "absolute", top: 0, right: 0, width: 140, height: "100%", pointerEvents: "none", opacity: 0.5, WebkitMaskImage: "radial-gradient(farthest-side at top right,white,transparent)", maskImage: "radial-gradient(farthest-side at top right,white,transparent)" }}>
+      <svg width="100%" height="100%">
+        <defs>
+          <pattern id={pid} width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M.5 20V.5H20" fill="none" stroke={color} strokeOpacity="0.15" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${pid})`} />
+        {squares.map(([x, y], j) => (
+          <rect key={j} width="21" height="21" x={x * 20} y={y * 20} fill={color} opacity="0.08" />
+        ))}
+      </svg>
+    </div>
+  );
+}
 
 function Logo({ size = 38 }) {
   return (
@@ -88,6 +114,80 @@ function Logo({ size = 38 }) {
       <span style={{ fontSize: size * 0.5, fontWeight: 700, letterSpacing: "-0.02em" }}>
         <span style={{ color: "#fff" }}>Infra</span><span style={{ color: "#38bdf8" }}>Report</span>
       </span>
+    </div>
+  );
+}
+
+const TERMINAL_AGENTS = [
+  {
+    tab: "TÉCNICO", title: "agente-tecnico", ac: "#38bdf8",
+    q: "Disjuntor Q3 (32A) do QD-02 disparando com carga de 18A. Já troquei e persiste.",
+    out: "Disparo com 18A em 32A descarta sobrecarga. Causa: isolação degradada no ramal.",
+    tag: "→ Meça Riso com megôhmetro — mín. 1MΩ (NBR 5410 §6.3.3)",
+  },
+  {
+    tab: "COMERCIAL", title: "agente-comercial", ac: "#a78bfa",
+    q: "Proposta para 8 câmeras IP 4MP + NVR 16 canais no galpão da Construtora Beta.",
+    out: "Proposta montada com equipamentos, mão de obra e margem de 35%.",
+    tag: "→ R$ 6.840,00 · .docx enviado para contato@construtorabeta.com.br",
+  },
+  {
+    tab: "FINANCEIRO", title: "agente-financeiro", ac: "#34d399",
+    q: "Entrada de R$ 8.500 do Grupo TechPark — OS 2341, cabeamento concluído.",
+    out: "Registrado em Serviços / OS 2341. Saldo atualizado no dashboard.",
+    tag: "→ Saldo: R$ 26.350,00 · Margem do projeto: 62%",
+  },
+];
+
+function AgentTerminal() {
+  const [cur, setCur] = useState(0);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!pausedRef.current) setCur((c) => (c + 1) % TERMINAL_AGENTS.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const a = TERMINAL_AGENTS[cur];
+  const lines = [
+    <span key="q"><span style={{ color: a.ac }}>› </span><span style={{ color: "#fff" }}>{a.q}</span></span>,
+    <span key="o" style={{ color: "rgba(255,255,255,0.6)" }}>{a.out}</span>,
+    <span key="t" style={{ color: "#22c55e" }}>{a.tag}</span>,
+    <span key="c"><span style={{ color: a.ac }}>› </span><span style={{ display: "inline-block", width: 7, height: 14, background: a.ac, verticalAlign: "middle", animation: "irBlink 1s step-end infinite" }} /></span>,
+  ];
+
+  return (
+    <div style={{ position: "relative", background: "rgba(13,18,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden", backdropFilter: "blur(10px)", boxShadow: "0 30px 80px rgba(0,0,0,0.5)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        {["#ff5f56", "#ffbd2e", "#27c93f"].map((c) => <span key={c} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />)}
+        <span className="ir-mono" style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginLeft: 10, transition: "color .3s" }}>infrareport · {a.title}</span>
+      </div>
+      <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        {TERMINAL_AGENTS.map((ag, i) => {
+          const active = cur === i;
+          return (
+            <button key={i} onClick={() => { setCur(i); pausedRef.current = true; }} className="ir-mono" style={{ flex: 1, padding: "10px 0", textAlign: "center", fontSize: 10, letterSpacing: "0.08em", color: active ? ag.ac : "rgba(255,255,255,0.35)", cursor: "pointer", position: "relative", background: "none", border: "none", transition: "color .25s" }}>
+              {ag.tab}
+              <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: ag.ac, opacity: active ? 1 : 0, transition: "opacity .25s" }} />
+            </button>
+          );
+        })}
+      </div>
+      <div key={cur} className="ir-mono" style={{ padding: 20, fontSize: 12.5, lineHeight: 1.7, minHeight: 150 }}>
+        {lines.map((ln, k) => (
+          <div key={k} style={{ marginBottom: 10, opacity: 0, transform: "translateY(6px)", animation: `irAppear .4s forwards`, animationDelay: `${k * 0.35}s` }}>{ln}</div>
+        ))}
+      </div>
+      <div style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        {[["3", "agentes"], ["<2s", "resposta"], ["24/7", "ativo"]].map(([v, l], i) => (
+          <div key={i} style={{ flex: 1, padding: 16, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>{v}</div>
+            <div className="ir-mono" style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>{l}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -126,6 +226,7 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
         .ir-sheen{position:absolute;inset:0;background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,0.45) 50%,transparent 70%);animation:irSheen 3.2s ease-in-out infinite}
         @keyframes irSheen{0%,100%{transform:translateX(-130%)}50%{transform:translateX(130%)}}
         @keyframes irBlink{50%{opacity:0}}
+        @keyframes irAppear{to{opacity:1;transform:none}}
         @keyframes irPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
         .ir-mono{font-family:'JetBrains Mono',monospace}
         .ir-link{color:rgba(255,255,255,0.55);font-size:14px;text-decoration:none;transition:color .2s;cursor:pointer}
@@ -180,63 +281,52 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
             </div>
           </div>
 
-          {/* terminal */}
-          <div style={{ position: "relative", background: "rgba(13,18,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden", backdropFilter: "blur(10px)", boxShadow: "0 30px 80px rgba(0,0,0,0.5)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              {["#ff5f56", "#ffbd2e", "#27c93f"].map((c) => <span key={c} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />)}
-              <span className="ir-mono" style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginLeft: 10 }}>infrareport · agente-tecnico</span>
-            </div>
-            <div className="ir-mono" style={{ padding: 20, fontSize: 12.5, lineHeight: 1.7 }}>
-              <div style={{ marginBottom: 10 }}><span style={{ color: "#38bdf8" }}>› </span><span style={{ color: "#fff" }}>Disjuntor Q3 (32A) do QD-02 disparando com carga de 18A. Já troquei e persiste.</span></div>
-              <div style={{ marginBottom: 10 }}><span style={{ color: "rgba(255,255,255,0.6)" }}>Disparo com 18A em 32A descarta sobrecarga. Causa provável: isolação degradada no ramal.</span></div>
-              <div style={{ marginBottom: 10 }}><span style={{ color: "#22c55e" }}>→ Meça Riso com megôhmetro — mín. 1MΩ (NBR 5410 §6.3.3)</span></div>
-              <div><span style={{ color: "#38bdf8" }}>› </span><span style={{ display: "inline-block", width: 7, height: 14, background: "#38bdf8", verticalAlign: "middle", animation: "irBlink 1s step-end infinite" }} /></div>
-            </div>
-            <div style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-              {[["9+", "nichos"], ["<2s", "resposta"], ["24/7", "ativo"]].map(([v, l], i) => (
-                <div key={i} style={{ flex: 1, padding: 16, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>{v}</div>
-                  <div className="ir-mono" style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>{l}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* terminal multi-agente */}
+          <AgentTerminal />
         </div>
       </section>
 
       {/* NICHES */}
-      <section style={{ padding: "90px 40px", maxWidth: 920, margin: "0 auto" }}>
+      <section style={{ padding: "90px 40px", maxWidth: 760, margin: "0 auto" }}>
         <div ref={addReveal} style={{ ...revealStyle, textAlign: "center", marginBottom: 50 }}>
           <div className="ir-mono" style={{ fontSize: 12, letterSpacing: "0.15em", color: "#38bdf8", marginBottom: 14 }}>NICHOS ATENDIDOS</div>
           <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: "-0.02em" }}>Um sistema para <span style={{ background: "linear-gradient(120deg,#38bdf8,#2563eb)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>cada especialidade</span></h2>
           <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", marginTop: 14, maxWidth: 480, margin: "14px auto 0" }}>Clique em um nicho para ver o que o agente resolve e quais normas domina.</p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }} className="ir-niche-grid">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {NICHES.map((n, i) => {
             const open = openNiche === i;
             return (
-              <div key={i} ref={addReveal} style={{ ...revealStyle, transitionDelay: `${i * 50}ms`, background: "rgba(255,255,255,0.02)", border: `1px solid ${open ? "rgba(56,189,248,0.4)" : "rgba(255,255,255,0.07)"}`, borderRadius: 14, overflow: "hidden", transition: "border-color .25s, opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1)" }}>
-                <div onClick={() => setOpenNiche(open ? -1 : i)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 20px", cursor: "pointer", userSelect: "none" }}>
+              <div key={i} ref={addReveal} style={{ ...revealStyle, transitionDelay: `${i * 50}ms`, position: "relative", background: "rgba(255,255,255,0.025)", border: `1px solid ${open ? "rgba(56,189,248,0.45)" : "rgba(255,255,255,0.07)"}`, borderRadius: 14, overflow: "hidden", transition: "border-color .25s, opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1)" }}>
+                <NichePattern color={n.color} />
+                <div onClick={() => setOpenNiche(open ? -1 : i)} style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", cursor: "pointer", userSelect: "none" }}>
                   <div style={{ width: 42, height: 42, borderRadius: 11, background: `${n.color}1a`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={n.color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={n.icon} /></svg>
                   </div>
                   <span style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>{n.name}</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "transform .3s", transform: open ? "rotate(180deg)" : "none" }}><polyline points="6 9 12 15 18 9" /></svg>
+                  <span className="ir-mono ir-niche-preview" style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginRight: 14 }}>{n.norms.length} normas · {n.probs.length} usos</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "transform .3s", transform: open ? "rotate(180deg)" : "none", flexShrink: 0 }}><polyline points="6 9 12 15 18 9" /></svg>
                 </div>
-                <div style={{ maxHeight: open ? 360 : 0, overflow: "hidden", transition: "max-height .4s cubic-bezier(.16,1,.3,1)" }}>
-                  <div style={{ padding: "0 20px 20px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                    <div className="ir-mono" style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", margin: "16px 0 10px" }}>O QUE O AGENTE RESOLVE</div>
-                    {n.probs.map((p, j) => (
-                      <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, marginBottom: 8 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={n.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 3 }}><polyline points="20 6 9 17 4 12" /></svg>
-                        {p}
+                <div style={{ maxHeight: open ? 300 : 0, overflow: "hidden", transition: "max-height .4s cubic-bezier(.16,1,.3,1)" }}>
+                  <div style={{ padding: "0 22px 20px 78px" }} className="ir-niche-body">
+                    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 24 }} className="ir-niche-cols">
+                      <div>
+                        <div className="ir-mono" style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", margin: "6px 0 10px" }}>O QUE O AGENTE RESOLVE</div>
+                        {n.probs.map((p, j) => (
+                          <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, marginBottom: 8 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={n.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 3 }}><polyline points="20 6 9 17 4 12" /></svg>
+                            {p}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                    <div className="ir-mono" style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", margin: "16px 0 10px" }}>NORMAS QUE DOMINA</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {n.norms.map((nm, j) => (
-                        <span key={j} className="ir-mono" style={{ fontSize: 10, padding: "3px 9px", borderRadius: 6, background: "rgba(56,189,248,0.1)", color: "#85c5f0", border: "1px solid rgba(56,189,248,0.2)" }}>{nm}</span>
-                      ))}
+                      <div>
+                        <div className="ir-mono" style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.4)", margin: "6px 0 10px" }}>NORMAS QUE DOMINA</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {n.norms.map((nm, j) => (
+                            <span key={j} className="ir-mono" style={{ fontSize: 10, padding: "3px 9px", borderRadius: 6, background: "rgba(56,189,248,0.1)", color: "#85c5f0", border: "1px solid rgba(56,189,248,0.2)", height: "fit-content" }}>{nm}</span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -266,14 +356,105 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
                 </div>
                 <div className="ir-mono" style={{ fontSize: 11, letterSpacing: "0.1em", color: ag.color, marginBottom: 6 }}>{ag.tag}</div>
                 <h3 style={{ fontSize: 19, fontWeight: 700, marginBottom: 10 }}>{ag.name}</h3>
-                <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "rgba(255,255,255,0.55)", marginBottom: 18 }}>{ag.desc}</p>
+                <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "rgba(255,255,255,0.55)", marginBottom: 16 }}>{ag.desc}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                  {ag.actions.map((act, j) => (
+                    <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "rgba(255,255,255,0.72)", lineHeight: 1.45 }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ag.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><polyline points="20 6 9 17 4 12" /></svg>
+                      {act}
+                    </div>
+                  ))}
+                </div>
                 <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 12, padding: 14 }}>
+                  <div className="ir-mono" style={{ fontSize: 9, letterSpacing: "0.1em", color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>EXEMPLO REAL</div>
                   <div style={{ background: `${ag.color}15`, borderRadius: 9, padding: "9px 12px", marginBottom: 10, fontSize: 12, lineHeight: 1.5, color: "rgba(255,255,255,0.85)" }}>{ag.q}</div>
                   <div style={{ fontSize: 12, lineHeight: 1.55, color: "rgba(255,255,255,0.65)", padding: "0 4px" }}>{ag.a}</div>
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* DASHBOARD — VEJA POR DENTRO */}
+      <section style={{ padding: "90px 40px" }}>
+        <div style={{ maxWidth: 920, margin: "0 auto" }}>
+          <div ref={addReveal} style={{ ...revealStyle, textAlign: "center", marginBottom: 44 }}>
+            <div className="ir-mono" style={{ fontSize: 12, letterSpacing: "0.15em", color: "#38bdf8", marginBottom: 14 }}>VEJA POR DENTRO</div>
+            <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: "-0.02em" }}>Não é promessa. É <span style={{ background: "linear-gradient(120deg,#38bdf8,#2563eb)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>produto rodando</span>.</h2>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", marginTop: 14, maxWidth: 500, margin: "14px auto 0" }}>O mesmo dashboard que seus agentes alimentam em tempo real — controle financeiro, margem por projeto e relatórios prontos pra exportar.</p>
+          </div>
+
+          <div ref={addReveal} style={{ ...revealStyle, background: "rgba(13,18,28,0.7)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.5)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
+              {["#ff5f56", "#ffbd2e", "#27c93f"].map((c) => <span key={c} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />)}
+              <div className="ir-mono" style={{ flex: 1, marginLeft: 12, background: "rgba(0,0,0,0.3)", borderRadius: 7, padding: "5px 12px", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>app.infrareport.3amgflowz.com.br/dashboard</div>
+            </div>
+            <div style={{ padding: 20, background: "#0c1119" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                  Dashboard Financeiro <span style={{ fontSize: 9, background: "rgba(52,211,153,0.15)", color: "#34d399", padding: "2px 8px", borderRadius: 20, fontWeight: 600 }}>● LIVE</span>
+                </div>
+                <button style={{ fontSize: 11, background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", color: "#fff", border: "none", padding: "6px 13px", borderRadius: 8, fontFamily: "inherit", fontWeight: 600, cursor: "pointer" }}>↓ Exportar PDF</button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 14, marginBottom: 14 }} className="ir-dash-grid">
+                <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 16 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>Entradas vs Saídas</h4>
+                  <div className="ir-mono" style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", marginBottom: 14 }}>Últimos 6 meses</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 90, paddingTop: 6 }}>
+                    {[[48, 20, "Jan"], [62, 16, "Fev"], [75, 18, "Mar"], [58, 24, "Abr"], [95, 26, "Mai"], [82, 22, "Jun"]].map(([h1, h2, m], j) => (
+                      <div key={j} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                        <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 78 }}>
+                          <div style={{ width: 9, borderRadius: "2px 2px 0 0", height: `${h1}%`, background: "#34d399" }} />
+                          <div style={{ width: 9, borderRadius: "2px 2px 0 0", height: `${h2}%`, background: "#f87171" }} />
+                        </div>
+                        <span style={{ fontSize: 8, color: "rgba(255,255,255,0.4)" }}>{m}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 16 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>Evolução do Saldo</h4>
+                  <div className="ir-mono" style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", marginBottom: 14 }}>Acumulado mês a mês</div>
+                  <svg width="100%" height="84" viewBox="0 0 240 84" preserveAspectRatio="none">
+                    <defs><linearGradient id="irLg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#34d399" stopOpacity="0.3" /><stop offset="1" stopColor="#34d399" stopOpacity="0" /></linearGradient></defs>
+                    <path d="M0,70 L48,58 L96,44 L144,40 L192,22 L240,8 L240,84 L0,84 Z" fill="url(#irLg)" />
+                    <path d="M0,70 L48,58 L96,44 L144,40 L192,22 L240,8" fill="none" stroke="#34d399" strokeWidth="2" />
+                    <path d="M0,72 L48,66 L96,68 L144,70 L192,64 L240,66" fill="none" stroke="#3b82f6" strokeWidth="2" />
+                  </svg>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }} className="ir-dash-grid2">
+                <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 16 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 600, marginBottom: 10 }}>Receitas por Tipo</h4>
+                  <div style={{ width: 78, height: 78, borderRadius: "50%", margin: "6px auto", background: "conic-gradient(#3b82f6 0 80%,#34d399 80% 93%,#f59e0b 93% 100%)" }}>
+                    <div style={{ width: 46, height: 46, background: "#0c1119", borderRadius: "50%", position: "relative", top: 16, left: 16 }} />
+                  </div>
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 16 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 600, marginBottom: 10 }}>Saídas por Categoria</h4>
+                  <div style={{ width: 78, height: 78, borderRadius: "50%", margin: "6px auto", background: "conic-gradient(#ef4444 0 61%,#a855f7 61% 78%,#f59e0b 78% 87%,#ec4899 87% 100%)" }}>
+                    <div style={{ width: 46, height: 46, background: "#0c1119", borderRadius: "50%", position: "relative", top: 16, left: 16 }} />
+                  </div>
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 16 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>Projetos em Andamento</h4>
+                  <div className="ir-mono" style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", marginBottom: 12 }}>Margem por projeto</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                    {[["Supermercado Beta", 82.9, "#34d399"], ["Construtora Alfa", 86.4, "#34d399"], ["Escritório Delta", 100, "#34d399"], ["TechPark BSB", 71.3, "#3b82f6"]].map(([n, v, c], j) => (
+                      <div key={j} style={{ fontSize: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span>{n}</span><span style={{ color: c }}>{v}%</span></div>
+                        <div style={{ height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${v}%`, borderRadius: 3, background: `linear-gradient(90deg,${c},${c})` }} /></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style={{ textAlign: "center", marginTop: 22, fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Gerado automaticamente a partir do que o Agente Financeiro registra.</div>
         </div>
       </section>
 
@@ -331,9 +512,14 @@ export default function InfraReportLanding({ onLogin, onRegister }) {
         @media(max-width:900px){
           .ir-hero-grid{grid-template-columns:1fr!important;gap:40px!important}
           .ir-agent-grid,.ir-plan-grid{grid-template-columns:1fr!important}
-          .ir-niche-grid{grid-template-columns:repeat(2,1fr)!important}
           .ir-desktop-nav{display:none!important}
           h1{font-size:40px!important}
+        }
+        @media(max-width:640px){
+          .ir-niche-cols{grid-template-columns:1fr!important;gap:14px!important}
+          .ir-niche-body{padding-left:22px!important}
+          .ir-niche-preview{display:none!important}
+          .ir-dash-grid,.ir-dash-grid2{grid-template-columns:1fr!important}
         }
       `}</style>
     </div>
