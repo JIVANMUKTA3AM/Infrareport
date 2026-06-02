@@ -6,6 +6,9 @@ import {
   Bell, Settings2, Radio, FileText,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useAgentHistory, saveAgentMessage, clearAgentHistory } from '../hooks/useAgentHistory'
+
+const AGENT = 'tecnico'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -209,6 +212,9 @@ export default function AgenteTecnico() {
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
 
+  // Carrega histórico do Supabase
+  useAgentHistory(AGENT, user?.id, setMessages)
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
@@ -219,8 +225,10 @@ export default function AgenteTecnico() {
     setInput('')
 
     const userMsg = { role: 'user', content: msg }
-    const newHistory = [...messages, userMsg]
-    setMessages(newHistory)
+    // Captura history ANTES de adicionar a nova mensagem (para enviar ao backend)
+    const historyForApi = messages.map(m => ({ role: m.role, content: m.content }))
+    setMessages(prev => [...prev, userMsg])
+    saveAgentMessage(AGENT, user?.id, 'user', msg)
     setLoading(true)
 
     try {
@@ -230,8 +238,8 @@ export default function AgenteTecnico() {
         body: JSON.stringify({
           user_id: user?.id,
           message: msg,
-          niche: niche,
-          history: messages.map(m => ({ role: m.role, content: m.content })),
+          niche:   niche,
+          history: historyForApi,
         }),
       })
 
@@ -241,15 +249,13 @@ export default function AgenteTecnico() {
       if (data.niche_detected && !niche) setNiche(data.niche_detected)
       if (data.suggestions?.length) setSuggestions(data.suggestions)
 
-      setMessages(prev => [...prev, {
-        role:       'assistant',
-        content:    data.reply,
-        has_report: data.has_report,
-      }])
+      const botMsg = { role: 'assistant', content: data.reply, has_report: data.has_report }
+      setMessages(prev => [...prev, botMsg])
+      saveAgentMessage(AGENT, user?.id, 'assistant', data.reply, { has_report: !!data.has_report })
     } catch (err) {
       setMessages(prev => [...prev, {
-        role:    'assistant',
-        content: `⚠️ Erro ao conectar com o agente: ${err.message}. Verifique se o backend está rodando.`,
+        role:       'assistant',
+        content:    `⚠️ Erro ao conectar com o agente: ${err.message}. Verifique se o backend está rodando.`,
         has_report: false,
       }])
     } finally {
@@ -303,7 +309,7 @@ export default function AgenteTecnico() {
         {/* Reset */}
         {messages.length > 0 && (
           <button
-            onClick={() => { setMessages([]); setNiche(null); setSuggestions([]) }}
+            onClick={() => clearAgentHistory(AGENT, user?.id, () => { setMessages([]); setNiche(null); setSuggestions([]) })}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.72rem] font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
           >
             <RefreshCw size={12} />

@@ -1,15 +1,22 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, RefreshCw, ChevronRight, MessageSquarePlus, DollarSign, ArrowUpCircle, ArrowDownCircle, PieChart } from 'lucide-react'
+import { Send, Bot, User, RefreshCw, MessageSquarePlus, DollarSign, ArrowUpCircle, ArrowDownCircle, PieChart } from 'lucide-react'
 import { KPI_CURRENT } from '../data/mock'
 import { useAuth } from '../context/AuthContext'
+import { useAgentHistory, saveAgentMessage, clearAgentHistory } from '../hooks/useAgentHistory'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
+const AGENT    = 'financeiro'
+
+const WELCOME_MSG = {
+  role: 'assistant',
+  content: 'Olá! 👋\nSou seu **Agente Financeiro.** Posso te ajudar com consultas, lançamentos rápidos em linguagem natural e relatórios.\n\nExperimente dizer: *"Gastei R$200 em gasolina pro carro"* ou *"Qual meu saldo?"*',
+}
 
 const QUICK_PROMPTS = [
-  { label: 'Qual meu saldo atual?', prompt: 'Qual meu saldo atual?' },
-  { label: 'Resumo das entradas do mês', prompt: 'Qual o resumo das entradas deste mês?' },
-  { label: 'Maiores gastos', prompt: 'Onde eu gastei mais dinheiro neste mês?' },
-  { label: 'Gerar relatório', prompt: 'Gere um relatório completo de fechamento mensal.' },
+  { label: 'Qual meu saldo atual?',        prompt: 'Qual meu saldo atual?' },
+  { label: 'Resumo das entradas do mês',   prompt: 'Qual o resumo das entradas deste mês?' },
+  { label: 'Maiores gastos',               prompt: 'Onde eu gastei mais dinheiro neste mês?' },
+  { label: 'Gerar relatório',              prompt: 'Gere um relatório completo de fechamento mensal.' },
 ]
 
 function formatBRL(value) {
@@ -19,12 +26,12 @@ function formatBRL(value) {
 function formatMessage(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br/>')
 }
 
 function Message({ msg }) {
   const isBot = msg.role === 'assistant'
-
   return (
     <div className={`flex gap-3 ${isBot ? 'justify-start' : 'justify-end'} animate-fade-up`}>
       {isBot && (
@@ -33,7 +40,6 @@ function Message({ msg }) {
           <Bot size={14} className="text-white" />
         </div>
       )}
-
       <div className={`group max-w-[85%] ${isBot ? '' : 'flex flex-col items-end'}`}>
         <div
           className="rounded-2xl px-4 py-3 text-[0.83rem] leading-relaxed"
@@ -43,15 +49,13 @@ function Message({ msg }) {
             background: 'linear-gradient(135deg,#1D4ED8,#2563EB)', color: '#fff', boxShadow: '0 4px 16px rgba(37,99,235,0.25)',
           }}
         >
-          {isBot ? (
-            <div dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
-          ) : (
-            <p>{msg.content}</p>
-          )}
+          {isBot
+            ? <div dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
+            : <p>{msg.content}</p>
+          }
         </div>
         <div className="text-[0.65rem] text-slate-400 mt-1 px-1">{msg.time || 'Agora'}</div>
       </div>
-
       {!isBot && (
         <div className="w-8 h-8 rounded-xl bg-slate-200 flex items-center justify-center shrink-0 mt-0.5 text-slate-500">
           <User size={14} />
@@ -79,14 +83,14 @@ function TypingIndicator() {
 
 export default function AgenteFinanceiro() {
   const { user } = useAuth()
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Olá! 👋\nSou seu **Agente Financeiro.** Posso te ajudar com consultas, lançamentos rápidos em linguagem natural e relatórios.\n\nExperimente dizer: *"Gastei R$200 em gasolina pro carro"* ou *"Qual meu saldo?"*' }
-  ])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  
+  const [messages, setMessages] = useState([WELCOME_MSG])
+  const [input,    setInput]    = useState('')
+  const [loading,  setLoading]  = useState(false)
   const bottomRef = useRef(null)
-  const inputRef = useRef(null)
+  const inputRef  = useRef(null)
+
+  // Carrega histórico do Supabase
+  useAgentHistory(AGENT, user?.id, setMessages)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -97,44 +101,44 @@ export default function AgenteFinanceiro() {
     if (!msg || loading) return
     setInput('')
 
-    const newHistory = [...messages, { role: 'user', content: msg, time: 'Agora' }]
-    setMessages(newHistory)
+    const userMsg = { role: 'user', content: msg, time: 'Agora' }
+    setMessages(prev => [...prev, userMsg])
+    saveAgentMessage(AGENT, user?.id, 'user', msg)
     setLoading(true)
 
     try {
       const res = await fetch(`${API_BASE}/api/financial/message`, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user?.id, message: msg }),
+        body:    JSON.stringify({ user_id: user?.id, message: msg }),
       })
 
       if (!res.ok) throw new Error(`Erro ${res.status}`)
       const data = await res.json()
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.reply || data.response || 'Confirmado.',
-        time: 'Agora'
-      }])
+      const reply = data.confirmation || data.reply || data.response || 'Processado.'
+      setMessages(prev => [...prev, { role: 'assistant', content: reply, time: 'Agora' }])
+      saveAgentMessage(AGENT, user?.id, 'assistant', reply)
     } catch (err) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `⚠️ Erro de conexão com o agente financeiro: ${err.message}.`,
-        time: 'Agora'
-      }])
+      const errMsg = `⚠️ Erro de conexão com o agente financeiro: ${err.message}.`
+      setMessages(prev => [...prev, { role: 'assistant', content: errMsg, time: 'Agora' }])
     } finally {
       setLoading(false)
       setTimeout(() => inputRef.current?.focus(), 100)
     }
   }
 
+  function handleReset() {
+    clearAgentHistory(AGENT, user?.id, () => setMessages([WELCOME_MSG]))
+  }
+
   return (
     <div className="p-7 h-[calc(100vh-60px)] animate-fade-up">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 h-full max-h-[800px]">
-        
+
         {/* Main Chat Area */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
-          
+
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <div className="flex items-center gap-3">
@@ -148,10 +152,10 @@ export default function AgenteFinanceiro() {
                 </div>
               </div>
             </div>
-            <button 
-              onClick={() => setMessages([{ role:'assistant', content:'Conversa reiniciada. Como posso ajudar?' }])}
+            <button
+              onClick={handleReset}
               className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              title="Reiniciar conversa"
+              title="Limpar conversa"
             >
               <RefreshCw size={16} />
             </button>
@@ -166,18 +170,16 @@ export default function AgenteFinanceiro() {
 
           {/* Input Area */}
           <div className="p-5 border-t border-slate-100 bg-white">
-            
-            {/* Chips */}
             {messages.length < 3 && (
               <div className="flex flex-wrap gap-2 mb-3">
                 {QUICK_PROMPTS.map((q, i) => (
-                  <button key={i} onClick={() => send(q.prompt)} className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-blue-600 text-[0.7rem] font-semibold hover:bg-blue-50 transition-colors">
+                  <button key={i} onClick={() => send(q.prompt)}
+                    className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-blue-600 text-[0.7rem] font-semibold hover:bg-blue-50 transition-colors">
                     {q.label}
                   </button>
                 ))}
               </div>
             )}
-
             <div className="flex items-end gap-3 bg-slate-50 border border-slate-200 rounded-xl p-2 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
               <textarea
                 ref={inputRef}
@@ -192,7 +194,7 @@ export default function AgenteFinanceiro() {
                   e.target.style.height = Math.min(e.target.scrollHeight, 80) + 'px'
                 }}
               />
-              <button 
+              <button
                 onClick={() => send()}
                 disabled={!input.trim() || loading}
                 className="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:hover:bg-blue-600 shrink-0 transition-colors"
@@ -203,30 +205,25 @@ export default function AgenteFinanceiro() {
           </div>
         </div>
 
-        {/* Sidebar Info Panel */}
+        {/* Sidebar */}
         <div className="flex flex-col gap-5">
-          
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <h4 className="text-[0.7rem] font-bold uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-1.5">
               <PieChart size={14} className="text-slate-500" /> Resumo Rápido
             </h4>
             <div className="space-y-3">
-              <div className="flex justify-between items-center text-[0.85rem] pb-3 border-b border-slate-100">
-                <span className="text-slate-500">Entradas (mar)</span>
-                <span className="font-bold text-emerald-600">{formatBRL(KPI_CURRENT.entradas)}</span>
-              </div>
-              <div className="flex justify-between items-center text-[0.85rem] pb-3 border-b border-slate-100">
-                <span className="text-slate-500">Saídas (mar)</span>
-                <span className="font-bold text-red-500">{formatBRL(KPI_CURRENT.saidas)}</span>
-              </div>
-              <div className="flex justify-between items-center text-[0.85rem] pb-3 border-b border-slate-100">
-                <span className="text-slate-500">Saldo do mês</span>
-                <span className="font-bold text-blue-600">{formatBRL(KPI_CURRENT.saldo)}</span>
-              </div>
-              <div className="flex justify-between items-center text-[0.85rem]">
-                <span className="text-slate-500 truncate">Acumulado</span>
-                <span className="font-bold text-slate-800">{formatBRL(KPI_CURRENT.acumulado)}</span>
-              </div>
+              {[
+                { label: 'Entradas (mar)', value: KPI_CURRENT.entradas, color: 'text-emerald-600' },
+                { label: 'Saídas (mar)',   value: KPI_CURRENT.saidas,   color: 'text-red-500' },
+                { label: 'Saldo do mês',  value: KPI_CURRENT.saldo,    color: 'text-blue-600' },
+                { label: 'Acumulado',     value: KPI_CURRENT.acumulado, color: 'text-slate-800' },
+              ].map((row, i, arr) => (
+                <div key={row.label}
+                  className={`flex justify-between items-center text-[0.85rem] pb-3 ${i < arr.length - 1 ? 'border-b border-slate-100' : ''}`}>
+                  <span className="text-slate-500">{row.label}</span>
+                  <span className={`font-bold ${row.color}`}>{formatBRL(row.value)}</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -236,11 +233,13 @@ export default function AgenteFinanceiro() {
             </h4>
             <div className="space-y-2">
               {[
-                { title:'Consulta de saldo', ex:'"Qual meu saldo do mês?"', icon: DollarSign, color:'text-blue-500', bg:'bg-blue-50' },
-                { title:'Lançar saída', ex:'"Gastei R$350 em cabos"', icon: ArrowDownCircle, color:'text-red-500', bg:'bg-red-50' },
-                { title:'Lançar entrada', ex:'"Recebi R$1500 pela OS 23"', icon: ArrowUpCircle, color:'text-emerald-500', bg:'bg-emerald-50' },
+                { title: 'Consulta de saldo', ex: '"Qual meu saldo do mês?"', icon: DollarSign,      color: 'text-blue-500',    bg: 'bg-blue-50' },
+                { title: 'Lançar saída',      ex: '"Gastei R$350 em cabos"', icon: ArrowDownCircle, color: 'text-red-500',     bg: 'bg-red-50' },
+                { title: 'Lançar entrada',    ex: '"Recebi R$1500 pela OS 23"', icon: ArrowUpCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
               ].map((cmd, i) => (
-                <div key={i} className="p-3 border border-slate-100 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors" onClick={() => send(cmd.ex.replace(/"/g, ''))}>
+                <div key={i}
+                  className="p-3 border border-slate-100 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => send(cmd.ex.replace(/"/g, ''))}>
                   <div className="flex items-center gap-2 mb-1">
                     <div className={`p-1 rounded-md ${cmd.bg} ${cmd.color}`}><cmd.icon size={12} strokeWidth={3} /></div>
                     <span className="text-[0.75rem] font-bold text-slate-700">{cmd.title}</span>
@@ -262,7 +261,6 @@ export default function AgenteFinanceiro() {
               Saber mais →
             </button>
           </div>
-
         </div>
       </div>
     </div>
