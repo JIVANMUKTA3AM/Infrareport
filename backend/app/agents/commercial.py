@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.database import get_supabase
 from app.models.proposal import ProposalRequest, ProposalResponse, Equipment, ProposalContent
 from app.services.docx_generator import generate_proposal_docx
+from app.services.pdf_generator import generate_proposal_pdf
 from app.services.email_sender import send_proposal_email
 from app.services.file_storage import register_file
 
@@ -61,6 +62,102 @@ Regras obrigatórias:
 4. Toda linguagem deve ser profissional, direta e transmitir expertise técnica.
 5. O JSON de saída deve ser válido e completo.
 """
+
+
+CHAT_SYSTEM_PROMPT = f"""Você é o Agente Comercial da InfraReport — especialista em infraestrutura predial (AC, CFTV, elétrica, redes, hidráulica).
+
+Seu objetivo: montar uma proposta técnico-comercial completa a partir de fotos e conversa.
+
+REFERÊNCIA DE PREÇOS (Brasília-DF):
+{PRICE_REFERENCE}
+
+AO RECEBER IMAGENS, analise detalhadamente:
+- Identifique o tipo de serviço necessário
+- Liste equipamentos visíveis, estimando quantidades
+- Observe o porte do ambiente e a complexidade da instalação
+- Sugira itens adicionais que normalmente acompanham o serviço
+
+INFORMAÇÕES OBRIGATÓRIAS para gerar proposta:
+1. Nome do cliente ou empresa
+2. E-mail do cliente
+3. Segmento: ac / cftv / ti / eletrica / hidraulica / alarme / automacao / telecom
+4. Lista de equipamentos/serviços com quantidade e preço unitário estimado
+
+Se faltar alguma dessas informações, pergunte de forma direta e objetiva. Faça apenas UMA pergunta por vez.
+
+QUANDO TIVER TODAS AS INFORMAÇÕES, inclua EXATAMENTE ao final da resposta (sem nenhum texto depois):
+
+__PROPOSTA_PRONTA__
+{{"client_name":"...","client_email":"...","service":"...","segment":"...","equipments":[{{"description":"...","quantity":1,"unit_price":0.0}}],"notes":"..."}}
+__FIM_PROPOSTA__
+
+Seja consultivo, profissional e direto. Demonstre expertise técnica."""
+
+
+async def run_commercial_chat(
+    user_id,
+    messages: list[dict],
+    current_message: str,
+    images: list[str] = None,
+    company_name: str = "InfraReport",
+) -> dict:
+    """
+    Agente Comercial conversacional com suporte a visão (imagens).
+    Retorna: { reply, ready, proposal_data }
+    """
+    images = images or []
+    cfg = get_settings()
+    client_ai = anthropic.Anthropic(api_key=cfg.anthropic_api_key)
+
+    # Histórico anterior (apenas texto)
+    claude_messages = []
+    for msg in messages:
+        claude_messages.append({"role": msg["role"], "content": str(msg["content"])})
+
+    # Mensagem atual com imagens (se houver)
+    current_content = []
+    for img_b64 in images:
+        if img_b64.startswith("data:"):
+            header, data = img_b64.split(",", 1)
+            media_type = header.split(":")[1].split(";")[0]
+        else:
+            data = img_b64
+            media_type = "image/jpeg"
+        current_content.append({
+            "type": "image",
+            "source": {"type": "base64", "media_type": media_type, "data": data},
+        })
+
+    current_content.append({"type": "text", "text": current_message or "Analise as imagens enviadas."})
+    claude_messages.append({"role": "user", "content": current_content})
+
+    response = client_ai.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=1024,
+        system=CHAT_SYSTEM_PROMPT,
+        messages=claude_messages,
+    )
+
+    full_reply = response.content[0].text.strip()
+
+    ready = False
+    proposal_data = None
+    reply = full_reply
+
+    START = "__PROPOSTA_PRONTA__"
+    END   = "__FIM_PROPOSTA__"
+
+    if START in full_reply and END in full_reply:
+        try:
+            s = full_reply.index(START) + len(START)
+            e = full_reply.index(END)
+            proposal_data = json.loads(full_reply[s:e].strip())
+            reply = full_reply[:full_reply.index(START)].strip()
+            ready = True
+        except (ValueError, json.JSONDecodeError):
+            pass
+
+    return {"reply": reply, "ready": ready, "proposal_data": proposal_data}
 
 
 async def run_commercial_agent(req: ProposalRequest) -> ProposalResponse:
@@ -114,7 +211,15 @@ async def run_commercial_agent(req: ProposalRequest) -> ProposalResponse:
     proposal_id = uuid4()
     docx_path, total_value = generate_proposal_docx(req, proposal_id, content)
 
-    file_record = register_file(
+    # Gera PDF profissional além do .docx
+    pdf_path = None
+    try:
+        pdf_path, _ = generate_proposal_pdf(req, proposal_id, content)
+        register_file(user_id=req.user_id, file_path=pdf_path, file_type="proposta", ref_id=proposal_id)
+    except Exception as exc:
+        print(f"[commercial_agent] Falha ao gerar PDF: {exc}")
+
+    register_file(
         user_id=req.user_id,
         file_path=docx_path,
         file_type="proposta",
@@ -148,6 +253,7 @@ async def run_commercial_agent(req: ProposalRequest) -> ProposalResponse:
     return ProposalResponse(
         proposal_id=proposal_id,
         docx_url=f"/api/proposals/{proposal_id}/download",
+        pdf_url=f"/api/proposals/{proposal_id}/download-pdf" if pdf_path else None,
         total_value=total_value,
         email_sent=email_sent,
         message=(

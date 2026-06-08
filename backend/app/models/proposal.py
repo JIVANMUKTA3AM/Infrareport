@@ -41,6 +41,23 @@ class ProposalRequest(BaseModel):
 class ProposalResponse(BaseModel):
     proposal_id: UUID
     docx_url: str
+    pdf_url: Optional[str] = None
     total_value: float
     email_sent: bool
     message: str
+
+
+# ── Agente Comercial Conversacional (visão) ────────────────
+
+class ProposalChatRequest(BaseModel):
+    user_id: UUID
+    messages: list[dict]          # histórico anterior: [{ "role": str, "content": str }]
+    current_message: str
+    images: list[str] = []        # base64 das imagens da mensagem atual
+    company_name: Optional[str] = None
+
+
+class ProposalChatResponse(BaseModel):
+    reply: str
+    ready: bool = False
+    proposal_data: Optional[dict] = None  # preenchido quando ready=True
