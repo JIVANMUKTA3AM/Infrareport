@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Proposta Técnico-Comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-900: #0F172A;
+    --blue-800: #1E3A8A;
+    --blue-700: #1D4ED8;
+    --blue-600: #2563EB;
+    --blue-500: #3B82F6;
+    --blue-100: #DBEAFE;
+    --blue-50:  #EFF6FF;
+    --gray-800: #1E293B;
+    --gray-700: #334155;
+    --gray-600: #475569;
+    --gray-400: #94A3B8;
+    --gray-200: #E2E8F0;
+    --gray-100: #F1F5F9;
+    --gray-50:  #F8FAFC;
+    --emerald:  #059669;
+    --white:    #FFFFFF;
+  }
+
+  html, body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 10pt;
+    color: var(--gray-700);
+    background: var(--white);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Página ──────────────────────────────────────────── */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* ── Utilitários ─────────────────────────────────────── */
+  .page-break { page-break-after: always; break-after: page; }
+
+  /* ═══════════════════════════════════════════════════════
+     CAPA
+  ═══════════════════════════════════════════════════════ */
+  .cover {
+    width: 210mm;
+    min-height: 297mm;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: var(--white);
+  }
+
+  /* Barra lateral azul escura */
+  .cover__sidebar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 8mm;
+    background: linear-gradient(180deg, var(--blue-800) 0%, var(--blue-700) 100%);
+  }
+
+  /* Cabeçalho da capa */
+  .cover__header {
+    background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-800) 60%, var(--blue-700) 100%);
+    padding: 14mm 14mm 12mm 22mm;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Círculo decorativo */
+  .cover__header::before {
+    content: '';
+    position: absolute;
+    right: -30mm;
+    top: -30mm;
+    width: 80mm;
+    height: 80mm;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+  }
+  .cover__header::after {
+    content: '';
+    position: absolute;
+    right: 10mm;
+    bottom: -20mm;
+    width: 50mm;
+    height: 50mm;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+
+  .cover__logo-wrap {
+    margin-bottom: 6mm;
+  }
+  .cover__logo-img {
+    max-height: 14mm;
+    max-width: 60mm;
+    object-fit: contain;
+  }
+  .cover__company {
+    font-size: 22pt;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .cover__tagline {
+    display: inline-block;
+    margin-top: 4mm;
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 2mm 4mm;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* Corpo da capa */
+  .cover__body {
+    flex: 1;
+    padding: 12mm 14mm 10mm 22mm;
+    display: flex;
+    flex-direction: column;
+    gap: 8mm;
+  }
+
+  .cover__title-block {
+    border-left: 3px solid var(--blue-600);
+    padding-left: 5mm;
+  }
+  .cover__title-label {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: var(--blue-600);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-bottom: 2mm;
+  }
+  .cover__title {
+    font-size: 20pt;
+    font-weight: 800;
+    color: var(--gray-800);
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+  }
+  .cover__service-tag {
+    display: inline-block;
+    margin-top: 3mm;
+    background: var(--blue-50);
+    color: var(--blue-700);
+    font-size: 8.5pt;
+    font-weight: 600;
+    padding: 1.5mm 4mm;
+    border-radius: 20px;
+    border: 1px solid var(--blue-100);
+  }
+
+  /* Cards de metadados */
+  .cover__meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3mm;
+  }
+  .cover__meta-card {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    padding: 3.5mm 4mm;
+  }
+  .cover__meta-label {
+    font-size: 6.5pt;
+    font-weight: 700;
+    color: var(--blue-600);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 1mm;
+  }
+  .cover__meta-value {
+    font-size: 9.5pt;
+    font-weight: 600;
+    color: var(--gray-800);
+  }
+
+  /* Box do cliente */
+  .cover__client-box {
+    background: linear-gradient(135deg, var(--blue-50) 0%, var(--white) 100%);
+    border: 1.5px solid var(--blue-100);
+    border-radius: 8px;
+    padding: 5mm 6mm;
+  }
+  .cover__client-label {
+    font-size: 6.5pt;
+    font-weight: 700;
+    color: var(--blue-600);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 3mm;
+  }
+  .cover__client-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm 6mm;
+  }
+  .cover__client-row {}
+  .cover__client-key {
+    font-size: 7pt;
+    font-weight: 500;
+    color: var(--gray-400);
+    margin-bottom: 0.5mm;
+  }
+  .cover__client-val {
+    font-size: 9.5pt;
+    font-weight: 600;
+    color: var(--gray-800);
+  }
+
+  /* Total de destaque */
+  .cover__total {
+    background: linear-gradient(135deg, var(--blue-800) 0%, var(--blue-700) 100%);
+    border-radius: 8px;
+    padding: 5mm 6mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cover__total-label {
+    font-size: 8pt;
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .cover__total-value {
+    font-size: 18pt;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.5px;
+  }
+
+  /* Rodapé da capa */
+  .cover__footer {
+    padding: 6mm 14mm 8mm 22mm;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cover__footer-company {
+    font-size: 8pt;
+    font-weight: 600;
+    color: var(--gray-600);
+  }
+  .cover__footer-note {
+    font-size: 7.5pt;
+    color: var(--gray-400);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     PÁGINAS DE CONTEÚDO
+  ═══════════════════════════════════════════════════════ */
+  .content-page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 14mm 14mm 16mm 14mm;
+    position: relative;
+  }
+
+  /* Cabeçalho fixo por página */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 5mm;
+    margin-bottom: 7mm;
+    border-bottom: 2px solid var(--blue-100);
+  }
+  .page-header__left {
+    font-size: 8pt;
+    font-weight: 700;
+    color: var(--blue-700);
+  }
+  .page-header__right {
+    font-size: 7.5pt;
+    color: var(--gray-400);
+  }
+
+  /* Seções */
+  .section {
+    margin-bottom: 7mm;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .section-heading {
+    font-size: 8pt;
+    font-weight: 700;
+    color: var(--blue-800);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 3mm;
+    padding-bottom: 2mm;
+    border-bottom: 1.5px solid var(--blue-800);
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+  }
+  .section-heading::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 10px;
+    background: var(--blue-600);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .section-body {
+    font-size: 9.5pt;
+    line-height: 1.65;
+    color: var(--gray-700);
+  }
+  .section-body p + p { margin-top: 2mm; }
+
+  /* Tabela de dados cliente/condições */
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+  .info-table td {
+    padding: 2.5mm 4mm;
+    vertical-align: top;
+    border: 1px solid var(--gray-200);
+  }
+  .info-table td:first-child {
+    width: 38mm;
+    font-weight: 600;
+    color: var(--blue-800);
+    background: var(--blue-50);
+    white-space: nowrap;
+  }
+  .info-table td:last-child {
+    background: var(--gray-50);
+  }
+  .info-table tr:nth-child(even) td:last-child {
+    background: var(--white);
+  }
+
+  /* Tabela de itens */
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-top: 2mm;
+  }
+  .items-table thead tr {
+    background: linear-gradient(135deg, var(--blue-800) 0%, var(--blue-700) 100%);
+    color: var(--white);
+  }
+  .items-table thead th {
+    padding: 3mm 4mm;
+    font-weight: 700;
+    font-size: 7.5pt;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: none;
+  }
+  .items-table thead th:first-child { text-align: left; }
+  .items-table thead th:not(:first-child) { text-align: right; }
+  .items-table thead th:nth-child(2) { text-align: center; }
+
+  .items-table tbody tr:nth-child(odd)  { background: var(--white); }
+  .items-table tbody tr:nth-child(even) { background: var(--gray-50); }
+  .items-table tbody td {
+    padding: 2.5mm 4mm;
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: middle;
+  }
+  .items-table tbody td:first-child { text-align: left; color: var(--gray-800); font-weight: 500; }
+  .items-table tbody td:nth-child(2) { text-align: center; color: var(--gray-600); }
+  .items-table tbody td:nth-child(3) { text-align: right; color: var(--gray-600); }
+  .items-table tbody td:nth-child(4) { text-align: right; font-weight: 600; color: var(--gray-800); }
+
+  .items-table tfoot tr {
+    background: linear-gradient(135deg, var(--blue-800) 0%, var(--blue-700) 100%);
+  }
+  .items-table tfoot td {
+    padding: 3.5mm 4mm;
+    color: var(--white);
+    font-weight: 700;
+    border: none;
+  }
+  .items-table tfoot td:first-child {
+    font-size: 8pt;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: right;
+    color: rgba(255,255,255,0.8);
+  }
+  .items-table tfoot td:last-child {
+    font-size: 12pt;
+    text-align: right;
+    letter-spacing: -0.3px;
+  }
+
+  /* Diferenciais (lista com bullet estilizado) */
+  .diff-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm 5mm;
+    margin-top: 1mm;
+  }
+  .diff-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 2mm;
+    font-size: 9pt;
+    color: var(--gray-700);
+    line-height: 1.5;
+  }
+  .diff-list li::before {
+    content: '✓';
+    flex-shrink: 0;
+    width: 5mm;
+    height: 5mm;
+    background: var(--blue-600);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7pt;
+    font-weight: 700;
+    margin-top: 0.3mm;
+  }
+
+  /* Assinatura */
+  .sign-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10mm;
+    margin-top: 12mm;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .sign-party {
+    text-align: center;
+  }
+  .sign-line {
+    border-top: 1px solid var(--gray-400);
+    margin-bottom: 2mm;
+  }
+  .sign-name {
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: var(--gray-800);
+  }
+  .sign-role {
+    font-size: 7.5pt;
+    color: var(--gray-400);
+    margin-top: 0.5mm;
+  }
+
+  /* Rodapé de página */
+  .page-footer {
+    position: absolute;
+    bottom: 7mm;
+    left: 14mm;
+    right: 14mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--gray-200);
+    padding-top: 2.5mm;
+  }
+  .page-footer__company {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: var(--gray-400);
+  }
+  .page-footer__meta {
+    font-size: 7pt;
+    color: var(--gray-400);
+  }
+
+  /* Tag de destaque (badge) */
+  .badge {
+    display: inline-block;
+    padding: 1mm 3mm;
+    border-radius: 20px;
+    font-size: 7.5pt;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .badge--blue { background: var(--blue-50); color: var(--blue-700); border: 1px solid var(--blue-100); }
+  .badge--green { background: #ECFDF5; color: var(--emerald); border: 1px solid #A7F3D0; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     CAPA
+════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover__sidebar"></div>
+
+  <!-- Cabeçalho da capa -->
+  <div class="cover__header">
+    <div class="cover__logo-wrap">
+      {% if logo_base64 %}
+      <img class="cover__logo-img" src="{{ logo_base64 }}" alt="Logo"/>
+      {% else %}
+      <div class="cover__company">{{ company }}</div>
+      {% endif %}
+    </div>
+    <div class="cover__tagline">Proposta Técnico-Comercial</div>
+  </div>
+
+  <!-- Corpo da capa -->
+  <div class="cover__body">
+
+    <!-- Título + Serviço -->
+    <div class="cover__title-block">
+      <div class="cover__title-label">Apresentamos a você</div>
+      <div class="cover__title">Proposta<br/>Técnico-Comercial</div>
+      <div class="cover__service-tag">{{ service }}</div>
+    </div>
+
+    <!-- Metadados -->
+    <div class="cover__meta">
+      <div class="cover__meta-card">
+        <div class="cover__meta-label">Nº Proposta</div>
+        <div class="cover__meta-value">{{ proposal_number }}</div>
+      </div>
+      <div class="cover__meta-card">
+        <div class="cover__meta-label">Emissão</div>
+        <div class="cover__meta-value">{{ emission_date }}</div>
+      </div>
+      <div class="cover__meta-card">
+        <div class="cover__meta-label">Validade</div>
+        <div class="cover__meta-value">{{ validity_days }} dias</div>
+      </div>
+    </div>
+
+    <!-- Cliente -->
+    <div class="cover__client-box">
+      <div class="cover__client-label">Destinatário</div>
+      <div class="cover__client-grid">
+        <div class="cover__client-row">
+          <div class="cover__client-key">Cliente / Empresa</div>
+          <div class="cover__client-val">{{ client_name }}</div>
+        </div>
+        <div class="cover__client-row">
+          <div class="cover__client-key">E-mail</div>
+          <div class="cover__client-val">{{ client_email }}</div>
+        </div>
+        <div class="cover__client-row">
+          <div class="cover__client-key">Segmento</div>
+          <div class="cover__client-val">{{ segment_label }}</div>
+        </div>
+        <div class="cover__client-row">
+          <div class="cover__client-key">Prestador</div>
+          <div class="cover__client-val">{{ company }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total em destaque -->
+    <div class="cover__total">
+      <div>
+        <div class="cover__total-label">Valor total da proposta</div>
+        <div style="font-size:7.5pt;color:rgba(255,255,255,0.5);margin-top:1mm;">{{ equipments|length }} iten{{ 's' if equipments|length != 1 else '' }}</div>
+      </div>
+      <div class="cover__total-value">{{ total_formatted }}</div>
+    </div>
+
+  </div>
+
+  <!-- Rodapé da capa -->
+  <div class="cover__footer">
+    <div class="cover__footer-company">{{ company }}</div>
+    <div class="cover__footer-note">Proposta válida por {{ validity_days }} dias a partir da emissão</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PÁGINA DE CONTEÚDO
+════════════════════════════════════════ -->
+<div class="content-page">
+  <div class="page-header">
+    <div class="page-header__left">{{ company }} — Proposta Técnico-Comercial</div>
+    <div class="page-header__right">Nº {{ proposal_number }} · Emitida em {{ emission_date }}</div>
+  </div>
+
+  <!-- Dados do Cliente -->
+  <div class="section">
+    <div class="section-heading">Dados do Cliente</div>
+    <table class="info-table">
+      <tr><td>Cliente</td><td>{{ client_name }}</td></tr>
+      <tr><td>E-mail</td><td>{{ client_email }}</td></tr>
+      <tr><td>Serviço</td><td>{{ service }}</td></tr>
+    </table>
+  </div>
+
+  {% if content and content.introduction %}
+  <!-- Apresentação -->
+  <div class="section">
+    <div class="section-heading">Apresentação</div>
+    <div class="section-body">
+      {% for line in content.introduction.split('\n') %}
+        {% if line.strip() %}<p>{{ line.strip() }}</p>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if content and content.scope %}
+  <!-- Escopo -->
+  <div class="section">
+    <div class="section-heading">Escopo do Serviço</div>
+    <div class="section-body">
+      {% for line in content.scope.split('\n') %}
+        {% if line.strip() %}<p>{{ line.strip() }}</p>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if content and content.methodology %}
+  <!-- Metodologia -->
+  <div class="section">
+    <div class="section-heading">Metodologia e Execução</div>
+    <div class="section-body">
+      {% for line in content.methodology.split('\n') %}
+        {% if line.strip() %}<p>{{ line.strip() }}</p>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Itens da Proposta -->
+  <div class="section">
+    <div class="section-heading">Itens da Proposta</div>
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width:50%">Descrição</th>
+          <th style="width:8%;text-align:center">Qtd</th>
+          <th style="width:18%;text-align:right">Valor Unit.</th>
+          <th style="width:24%;text-align:right">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for eq in equipments %}
+        <tr>
+          <td>{{ eq.description }}</td>
+          <td style="text-align:center">{{ eq.quantity }}</td>
+          <td style="text-align:right">{{ eq.unit_price | currency }}</td>
+          <td style="text-align:right">{{ (eq.quantity * eq.unit_price) | currency }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">Valor Total da Proposta</td>
+          <td>{{ total_formatted }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {% if content and (content.payment_terms or content.execution_deadline or content.warranty) %}
+  <!-- Condições Comerciais -->
+  <div class="section">
+    <div class="section-heading">Condições Comerciais</div>
+    <table class="info-table">
+      {% if content.execution_deadline %}
+      <tr><td>Prazo de Execução</td><td>{{ content.execution_deadline }}</td></tr>
+      {% endif %}
+      {% if content.payment_terms %}
+      <tr><td>Forma de Pagamento</td><td>{{ content.payment_terms }}</td></tr>
+      {% endif %}
+      {% if content.warranty %}
+      <tr><td>Garantia</td><td>{{ content.warranty }}</td></tr>
+      {% endif %}
+      <tr><td>Validade da Proposta</td><td>{{ validity_days }} dias corridos a partir da emissão</td></tr>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if content and content.differentials %}
+  <!-- Diferenciais -->
+  <div class="section">
+    <div class="section-heading">Nossos Diferenciais</div>
+    <ul class="diff-list">
+      {% for line in content.differentials.split('\n') %}
+        {% if line.strip() %}<li>{{ line.strip().lstrip('•-– ') }}</li>{% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if notes %}
+  <!-- Observações -->
+  <div class="section">
+    <div class="section-heading">Observações</div>
+    <div class="section-body">
+      {% for line in notes.split('\n') %}
+        {% if line.strip() %}<p>{{ line.strip() }}</p>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Empresa -->
+  <div class="section">
+    <div class="section-heading">Dados da Empresa</div>
+    <table class="info-table">
+      <tr><td>Empresa</td><td>{{ company }}</td></tr>
+      {% if company_phone %}<tr><td>Telefone</td><td>{{ company_phone }}</td></tr>{% endif %}
+      {% if company_email %}<tr><td>E-mail</td><td>{{ company_email }}</td></tr>{% endif %}
+      {% if company_address %}<tr><td>Endereço</td><td>{{ company_address }}</td></tr>{% endif %}
+    </table>
+  </div>
+
+  <!-- Assinatura -->
+  <div class="sign-block">
+    <div class="sign-party">
+      <div class="sign-line"></div>
+      <div class="sign-name">{{ company }}</div>
+      <div class="sign-role">Contratante</div>
+    </div>
+    <div class="sign-party">
+      <div class="sign-line"></div>
+      <div class="sign-name">{{ client_name }}</div>
+      <div class="sign-role">Contratado</div>
+    </div>
+  </div>
+
+  <!-- Rodapé da página -->
+  <div class="page-footer">
+    <div class="page-footer__company">{{ company }} · Proposta Técnico-Comercial</div>
+    <div class="page-footer__meta">Emitida em {{ emission_date }} · Válida por {{ validity_days }} dias</div>
+  </div>
+
+</div>
+
+</body>
+</html>

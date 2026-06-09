@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     waha_session: str = "default"
     app_secret: str
     storage_path: str = "./storage"
+    gotenberg_url: str = "http://gotenberg:3000"
     # Google OAuth (Gmail integration)
     google_client_id: str = ""
     google_client_secret: str = ""

@@ -1,6 +1,12 @@
 version: "3.9"
 
 services:
+  gotenberg:
+    image: gotenberg/chromium:latest
+    container_name: infrareport_gotenberg
+    restart: unless-stopped
+    # Sem porta exposta externamente — acessado apenas pela API na rede interna
+
   api:
     build: ./backend
     container_name: infrareport_api
@@ -9,8 +15,8 @@ services:
     volumes:
       - ./backend/storage:/app/storage
     restart: unless-stopped
-    # Expõe a porta para facilitar testes locais independentes.
-    # Em prod, o nginx acessará diretamente via rede docker (porta 8000 exposta pelo Dockerfile)
+    depends_on:
+      - gotenberg
     ports:
       - "8001:8000"
 
