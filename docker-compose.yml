@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   gotenberg:
-    image: gotenberg/chromium:latest
+    image: gotenberg/gotenberg:8
     container_name: infrareport_gotenberg
     restart: unless-stopped
     # Sem porta exposta externamente — acessado apenas pela API na rede interna
