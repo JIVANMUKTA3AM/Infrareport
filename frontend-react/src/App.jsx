@@ -73,9 +73,17 @@ function AuthenticatedApp() {
   }
 
   useEffect(() => {
-    const handler = (e) => { if (e.state?.page) setPage(e.state.page) }
-    window.addEventListener('popstate', handler)
-    return () => window.removeEventListener('popstate', handler)
+    const onPop = (e) => { if (e.state?.page) setPage(e.state.page) }
+    const onHash = () => {
+      const h = location.hash.replace('#', '')
+      if (h) setPage(h)
+    }
+    window.addEventListener('popstate', onPop)
+    window.addEventListener('hashchange', onHash)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      window.removeEventListener('hashchange', onHash)
+    }
   }, [])
 
   const [view, setView] = useState('landing') // 'landing' | 'login' | 'register'

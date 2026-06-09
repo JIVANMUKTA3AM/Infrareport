@@ -7,6 +7,7 @@ from app.models.proposal import ProposalRequest, ProposalResponse, ProposalChatR
 from app.agents.commercial import run_commercial_agent, run_commercial_chat
 from app.database import get_supabase
 from app.config import get_settings
+from app.services.email_sender import send_proposal_email
 
 router = APIRouter(prefix="/api/proposals", tags=["proposals"])
 
@@ -29,16 +30,45 @@ async def list_proposals(
 
 @router.patch("/{proposal_id}")
 async def update_proposal_status(proposal_id: UUID, body: dict):
-    allowed = {"aprovada", "rejeitada", "enviada", "pendente"}
-    status = body.get("status")
+    allowed = {"pendente", "enviada", "aprovada", "rejeitada"}
+    status  = body.get("status")
+    # user_id vem do frontend só para lookup do Gmail — NÃO vai ao banco
+    caller_user_id = body.get("user_id")
+
     if status and status not in allowed:
         raise HTTPException(status_code=422, detail=f"Status inválido: {status}")
+
+    # Campos seguros para atualizar no banco (exclui user_id, id, created_at)
+    _blocked = {"user_id", "id", "created_at"}
+    update_data = {k: v for k, v in body.items() if k not in _blocked}
+
     try:
         db = get_supabase()
-        result = db.table("proposals").update(body).eq("id", str(proposal_id)).execute()
+        result = db.table("proposals").update(update_data).eq("id", str(proposal_id)).execute()
         if not result.data:
             raise HTTPException(status_code=404, detail="Proposta não encontrada")
-        return result.data[0]
+
+        proposal   = result.data[0]
+        email_sent = False
+
+        if status == "aprovada":
+            docx_path = proposal.get("docx_url")  # campo armazena o caminho no disco
+            uid       = caller_user_id or str(proposal.get("user_id", ""))
+            if docx_path and os.path.exists(docx_path):
+                try:
+                    await send_proposal_email(
+                        to_email=proposal["client_email"],
+                        client_name=proposal["client_name"],
+                        service=proposal["service"],
+                        docx_path=docx_path,
+                        user_id=uid,
+                        is_approval=True,
+                    )
+                    email_sent = True
+                except Exception as exc:
+                    print(f"[proposals] Falha ao enviar e-mail de aprovação: {exc}")
+
+        return {**proposal, "email_sent": email_sent}
     except HTTPException:
         raise
     except Exception as exc:

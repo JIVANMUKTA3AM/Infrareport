@@ -367,7 +367,7 @@ export default function AgenteComercial() {
           client_name:  proposalData.client_name,
           client_email: proposalData.client_email,
           service:      proposalData.service,
-          segment:      proposalData.segment || 'outro',
+          segment:      proposalData.segment || 'ac',
           equipments:   proposalData.equipments || [],
           notes:        proposalData.notes || '',
         }),

@@ -236,15 +236,18 @@ async def run_commercial_agent(req: ProposalRequest) -> ProposalResponse:
         "segment":      req.segment,
         "equipments":   json.dumps([e.model_dump() for e in req.equipments]),
         "value":        total_value,
-        "status":       "draft",
+        "status":       "pendente",
         "docx_url":     docx_path,
     }).execute()
 
     email_sent = False
     try:
-        await send_proposal_email(req.client_email, req.client_name, req.service, docx_path)
+        await send_proposal_email(
+            req.client_email, req.client_name, req.service, docx_path,
+            user_id=str(req.user_id),
+        )
         db.table("proposals").update(
-            {"status": "sent", "email_sent_at": "now()"}
+            {"status": "enviada", "email_sent_at": "now()"}
         ).eq("id", str(proposal_id)).execute()
         email_sent = True
     except Exception as exc:

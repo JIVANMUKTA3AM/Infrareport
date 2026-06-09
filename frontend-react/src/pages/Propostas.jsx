@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react'
-import { Eye, Download, CheckCircle, XCircle, Search, FileText } from 'lucide-react'
-import { PROPOSTAS_MOCK } from '../data/mock'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { Eye, Download, CheckCircle, XCircle, Search, RefreshCw, Mail } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 function formatBRL(value) {
   return `R$ ${Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
@@ -9,7 +11,7 @@ function formatBRL(value) {
 function StatusBadge({ status }) {
   const s = status?.toLowerCase()
   let bg = 'bg-slate-100', text = 'text-slate-600', dot = 'bg-slate-400'
-  
+
   if (s === 'aprovada') { bg = 'bg-emerald-50'; text = 'text-emerald-700'; dot = 'bg-emerald-500' }
   else if (s === 'pendente') { bg = 'bg-amber-50'; text = 'text-amber-700'; dot = 'bg-amber-500' }
   else if (s === 'rejeitada') { bg = 'bg-red-50'; text = 'text-red-700'; dot = 'bg-red-500' }
@@ -41,17 +43,53 @@ function ActionButton({ icon: Icon, label, onClick, color = 'slate' }) {
   )
 }
 
+function downloadProposal(id, ext) {
+  const path = ext === 'pdf'
+    ? `/api/proposals/${id}/download-pdf`
+    : `/api/proposals/${id}/download`
+  const a = document.createElement('a')
+  a.href = `${API_BASE}${path}`
+  a.download = `proposta_${id}.${ext}`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
 export default function Propostas() {
+  const { user } = useAuth()
+  const userId = user?.id
+
   const [filter, setFilter] = useState('todas')
   const [search, setSearch] = useState('')
-  const [propostas, setPropostas] = useState(PROPOSTAS_MOCK)
+  const [propostas, setPropostas] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedProp, setSelectedProp] = useState(null)
+  const [toast, setToast] = useState(null) // { msg, type: 'success'|'error' }
+
+  const fetchPropostas = useCallback(async () => {
+    if (!userId) return
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`${API_BASE}/api/proposals?user_id=${userId}`)
+      if (!res.ok) throw new Error(`Erro ${res.status}`)
+      setPropostas(await res.json())
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [userId])
+
+  useEffect(() => { fetchPropostas() }, [fetchPropostas])
 
   const filteredPropostas = useMemo(() => {
     return propostas.filter(p => {
       const matchFilter = filter === 'todas' || p.status === filter
-      const matchSearch = p.client_name.toLowerCase().includes(search.toLowerCase()) || 
-                          p.service.toLowerCase().includes(search.toLowerCase())
+      const matchSearch = !search ||
+        p.client_name?.toLowerCase().includes(search.toLowerCase()) ||
+        p.service?.toLowerCase().includes(search.toLowerCase())
       return matchFilter && matchSearch
     })
   }, [propostas, filter, search])
@@ -60,20 +98,66 @@ export default function Propostas() {
     const total = propostas.length
     const aprovadas = propostas.filter(p => p.status === 'aprovada').length
     const pendentes = propostas.filter(p => p.status === 'pendente' || p.status === 'draft').length
-    const valor = propostas.reduce((acc, p) => acc + (p.value || 0), 0)
+    const valor = propostas.reduce((acc, p) => acc + (p.value || p.total_value || 0), 0)
     return { total, aprovadas, pendentes, valor }
   }, [propostas])
 
-  const handleApprove = (id) => {
-    setPropostas(prev => prev.map(p => p.id === id ? { ...p, status: 'aprovada' } : p))
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 4000)
   }
 
-  const handleReject = (id) => {
-    setPropostas(prev => prev.map(p => p.id === id ? { ...p, status: 'rejeitada' } : p))
+  const handleApprove = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/proposals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'aprovada', user_id: userId }),
+      })
+      if (!res.ok) throw new Error(`Erro ${res.status}`)
+      const data = await res.json()
+      setPropostas(prev => prev.map(p => p.id === id ? { ...p, status: 'aprovada' } : p))
+      if (data.email_sent) {
+        showToast('Proposta aprovada e e-mail enviado ao cliente!')
+      } else {
+        showToast('Proposta aprovada. E-mail não pôde ser enviado.', 'warn')
+      }
+    } catch (err) {
+      showToast(`Erro ao aprovar: ${err.message}`, 'error')
+    }
+  }
+
+  const handleReject = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/proposals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejeitada', user_id: userId }),
+      })
+      if (!res.ok) throw new Error(`Erro ${res.status}`)
+      setPropostas(prev => prev.map(p => p.id === id ? { ...p, status: 'rejeitada' } : p))
+      showToast('Proposta marcada como rejeitada.', 'warn')
+    } catch (err) {
+      showToast(`Erro ao rejeitar: ${err.message}`, 'error')
+    }
   }
 
   return (
     <div className="p-7 space-y-5 animate-fade-up">
+
+      {/* ── Toast ──────────────────────────────────────────────────────────── */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-[0.82rem] font-semibold animate-fade-up
+          ${toast.type === 'error' ? 'bg-red-600 text-white' :
+            toast.type === 'warn'  ? 'bg-amber-500 text-white' :
+                                     'bg-emerald-600 text-white'}`}
+        >
+          {toast.type === 'success' && <Mail size={15} />}
+          {toast.type === 'warn'    && <CheckCircle size={15} />}
+          {toast.type === 'error'   && <XCircle size={15} />}
+          {toast.msg}
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4">
@@ -92,17 +176,17 @@ export default function Propostas() {
 
       {/* Main Table Card */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden">
-        
+
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-[1.05rem] font-bold text-slate-800 font-serif">Propostas Comerciais</h2>
-          
+
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Buscar cliente ou serviço..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -125,7 +209,17 @@ export default function Propostas() {
               ))}
             </div>
 
-            <button className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[0.75rem] font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-colors">
+            <button
+              onClick={fetchPropostas}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-[0.75rem] font-medium text-slate-500 hover:border-blue-300 hover:text-blue-600 transition-colors"
+            >
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            </button>
+
+            <button
+              onClick={() => { window.location.hash = '#agente-comercial' }}
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[0.75rem] font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-colors"
+            >
               Nova Proposta
             </button>
           </div>
@@ -145,7 +239,23 @@ export default function Propostas() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredPropostas.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <div className="flex items-center justify-center gap-2 text-slate-400">
+                      <RefreshCw size={18} className="animate-spin" />
+                      <span className="text-[0.85rem]">Carregando propostas...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <div className="text-red-500 text-[0.85rem]">⚠️ {error}</div>
+                    <button onClick={fetchPropostas} className="mt-2 text-blue-600 text-[0.8rem] underline">Tentar novamente</button>
+                  </td>
+                </tr>
+              ) : filteredPropostas.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                     <div className="text-4xl mb-3">📭</div>
@@ -155,13 +265,14 @@ export default function Propostas() {
               ) : (
                 filteredPropostas.map(p => {
                   const s = p.status
-                  const iconMap = { AC:'❄️', CFTV:'📷', TI:'🖥️', ELETRICA:'⚡', HIDRAULICA:'🔧' }
+                  const iconMap = { ac:'❄️', cftv:'📷', ti:'🖥️', eletrica:'⚡', hidraulica:'🔧' }
+                  const valor = p.value || p.total_value || 0
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-lg">
-                            {iconMap[p.segment?.toUpperCase()] || '📄'}
+                            {iconMap[p.segment?.toLowerCase()] || '📄'}
                           </div>
                           <div>
                             <div className="font-semibold text-slate-800 text-[0.85rem]">{p.client_name}</div>
@@ -173,7 +284,7 @@ export default function Propostas() {
                         {p.service}
                       </td>
                       <td className="px-6 py-4 text-[0.85rem] font-bold text-slate-800">
-                        {formatBRL(p.value)}
+                        {formatBRL(valor)}
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge status={s} />
@@ -184,8 +295,8 @@ export default function Propostas() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                           <ActionButton icon={Eye} label="Ver" onClick={() => setSelectedProp(p)} />
-                          <ActionButton icon={Download} label=".docx" onClick={() => {}} color="blue" />
-                          
+                          <ActionButton icon={Download} label=".docx" onClick={() => downloadProposal(p.id, 'docx')} color="blue" />
+
                           {(s === 'pendente' || s === 'draft' || s === 'enviada') && (
                             <ActionButton icon={CheckCircle} label="Aprovar" onClick={() => handleApprove(p.id)} color="emerald" />
                           )}
@@ -212,7 +323,7 @@ export default function Propostas() {
                 <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">📄 Proposta Comercial</h3>
                 <p className="text-[0.8rem] text-slate-500 mt-0.5">{selectedProp.service}</p>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedProp(null)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
               >
@@ -235,7 +346,9 @@ export default function Propostas() {
               </div>
               <div>
                 <div className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400 mb-1">Total</div>
-                <div className="font-serif font-black text-emerald-600 text-xl">{formatBRL(selectedProp.value)}</div>
+                <div className="font-serif font-black text-emerald-600 text-xl">
+                  {formatBRL(selectedProp.value || selectedProp.total_value || 0)}
+                </div>
               </div>
 
               <div className="col-span-2 mt-2">
@@ -268,18 +381,30 @@ export default function Propostas() {
             </div>
 
             <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-white">
-              <button className="px-4 py-2 text-[0.8rem] font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" onClick={() => setSelectedProp(null)}>
+              <button
+                className="px-4 py-2 text-[0.8rem] font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => setSelectedProp(null)}
+              >
                 Fechar
               </button>
-              <button className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-[0.8rem] font-bold transition-colors">
-                <Download size={14} /> Baixar PDF/.docx
+              <button
+                onClick={() => downloadProposal(selectedProp.id, 'docx')}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-[0.8rem] font-bold transition-colors"
+              >
+                <Download size={14} /> Baixar .docx
               </button>
-              {(selectedProp.status === 'pendente' || selectedProp.status === 'draft') && (
-                <button 
-                  onClick={() => { handleApprove(selectedProp.id); setSelectedProp(null) }}
+              <button
+                onClick={() => downloadProposal(selectedProp.id, 'pdf')}
+                className="flex items-center gap-1.5 px-4 py-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg text-[0.8rem] font-bold transition-colors"
+              >
+                <Download size={14} /> Baixar PDF
+              </button>
+              {(selectedProp.status === 'pendente' || selectedProp.status === 'draft' || selectedProp.status === 'enviada') && (
+                <button
+                  onClick={async () => { await handleApprove(selectedProp.id); setSelectedProp(null) }}
                   className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[0.8rem] font-bold shadow-md shadow-emerald-600/20 transition-colors"
                 >
-                  <CheckCircle size={14} /> Aprovar Proposta
+                  <CheckCircle size={14} /> Aprovar + Enviar E-mail
                 </button>
               )}
             </div>

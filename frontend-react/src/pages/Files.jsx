@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { FileText, FileSpreadsheet, File, RefreshCw, Search } from 'lucide-react'
 import DownloadButton from '../components/ui/DownloadButton'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
-const USER_ID   = 'USER_UUID_AQUI' // TODO: substituir pelo user autenticado
 
 const TYPE_CONFIG = {
   proposta:   { label: 'Proposta',   icon: FileText,        color: 'text-blue-600',   bg: 'bg-blue-50' },
@@ -28,7 +28,7 @@ function FileTypeIcon({ type }) {
   )
 }
 
-function FileRow({ file }) {
+function FileRow({ file, userId }) {
   const cfg = TYPE_CONFIG[file.file_type] || TYPE_CONFIG.proposta
   const date = new Date(file.created_at).toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'short', year: 'numeric',
@@ -52,7 +52,7 @@ function FileRow({ file }) {
       </td>
       <td className="px-5 py-3.5 text-[0.78rem] text-slate-500 whitespace-nowrap">{date}</td>
       <td className="px-5 py-3.5">
-        <DownloadButton fileId={file.id} userId={USER_ID} label="Baixar arquivo" variant="outline" size="sm" />
+        <DownloadButton fileId={file.id} userId={userId} label="Baixar arquivo" variant="outline" size="sm" />
       </td>
     </tr>
   )
@@ -71,6 +71,8 @@ function EmptyState({ filter }) {
 }
 
 export default function Files() {
+  const { user }  = useAuth()
+  const userId    = user?.id
   const [files,   setFiles]   = useState([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
@@ -78,10 +80,11 @@ export default function Files() {
   const [search,  setSearch]  = useState('')
 
   const fetchFiles = useCallback(async () => {
+    if (!userId) return
     setLoading(true)
     setError('')
     try {
-      const qs = new URLSearchParams({ user_id: USER_ID })
+      const qs = new URLSearchParams({ user_id: userId })
       if (filter) qs.set('file_type', filter)
       const res = await fetch(`${API_BASE}/files?${qs}`)
       if (!res.ok) throw new Error(`Erro ${res.status}`)
@@ -91,7 +94,7 @@ export default function Files() {
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [filter, userId])
 
   useEffect(() => { fetchFiles() }, [fetchFiles])
 
@@ -173,7 +176,7 @@ export default function Files() {
               </tr>
             </thead>
             <tbody>
-              {displayed.map(file => <FileRow key={file.id} file={file} />)}
+              {displayed.map(file => <FileRow key={file.id} file={file} userId={userId} />)}
             </tbody>
           </table>
         )}

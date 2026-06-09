@@ -48,7 +48,7 @@ async def _send_via_gmail_api(
     msg.attach(part)
 
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.post(
             GMAIL_SEND_URL,
             headers={
@@ -92,6 +92,7 @@ async def _send_via_smtp(
         username=cfg.smtp_user,
         password=cfg.smtp_password,
         start_tls=True,
+        timeout=15,
     )
 
 
@@ -103,14 +104,25 @@ async def send_proposal_email(
     service: str,
     docx_path: str,
     user_id: str | None = None,   # se fornecido, tenta Gmail API primeiro
+    is_approval: bool = False,
 ) -> None:
-    subject = f"Proposta Comercial — {service}"
-    body = (
-        f"Olá {client_name},\n\n"
-        f"Segue em anexo a proposta comercial referente ao serviço: {service}.\n\n"
-        "Qualquer dúvida, estamos à disposição.\n\n"
-        "Atenciosamente"
-    )
+    if is_approval:
+        subject = f"Proposta Aprovada — {service}"
+        body = (
+            f"Olá {client_name},\n\n"
+            f"Temos o prazer de confirmar a aprovação da proposta referente ao serviço: {service}.\n\n"
+            "Em breve entraremos em contato para alinhar os próximos passos.\n\n"
+            "Segue em anexo o documento da proposta para seus registros.\n\n"
+            "Atenciosamente"
+        )
+    else:
+        subject = f"Proposta Comercial — {service}"
+        body = (
+            f"Olá {client_name},\n\n"
+            f"Segue em anexo a proposta comercial referente ao serviço: {service}.\n\n"
+            "Qualquer dúvida, estamos à disposição.\n\n"
+            "Atenciosamente"
+        )
 
     # Tenta Gmail API se user_id for informado
     if user_id:
