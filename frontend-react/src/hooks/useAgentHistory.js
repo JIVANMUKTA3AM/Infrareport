@@ -7,7 +7,12 @@ const LIMIT = 100
  * Carrega histórico do agente ao montar o componente.
  * setMessages deve ser a função setState do componente pai.
  */
-export function useAgentHistory(agent, userId, setMessages) {
+/**
+ * Carrega histórico do agente ao montar o componente.
+ * onLoaded(rawData) é um callback opcional chamado com os dados brutos do Supabase,
+ * útil para reconstruir estados derivados (ex.: history text-only no AgenteComercial).
+ */
+export function useAgentHistory(agent, userId, setMessages, onLoaded) {
   useEffect(() => {
     if (!userId) return
     supabase
@@ -25,6 +30,7 @@ export function useAgentHistory(agent, userId, setMessages) {
           time:    new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
           ...(m.metadata || {}),
         })))
+        if (onLoaded) onLoaded(data)
       })
   }, [userId, agent])
 }

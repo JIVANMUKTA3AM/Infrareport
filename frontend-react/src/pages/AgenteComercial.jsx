@@ -4,8 +4,10 @@ import {
   Loader2, RefreshCw, ImagePlus,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useAgentHistory, saveAgentMessage, clearAgentHistory } from '../hooks/useAgentHistory'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
+const AGENT    = 'comercial'
 
 const WELCOME_MSG = {
   role: 'assistant',
@@ -260,6 +262,11 @@ export default function AgenteComercial() {
   const inputRef     = useRef(null)
   const fileInputRef = useRef(null)
 
+  // Carrega histórico e reconstrói o history text-only para a API
+  useAgentHistory(AGENT, user?.id, setMessages, (rawData) => {
+    setHistory(rawData.map(m => ({ role: m.role, content: m.content })))
+  })
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading, proposalData])
@@ -301,6 +308,7 @@ export default function AgenteComercial() {
       imageUrls: imageUrls.length ? imageUrls : undefined,
       time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     }])
+    saveAgentMessage(AGENT, user?.id, 'user', msgText)
 
     const currentHistory = history
     setLoading(true)
@@ -324,6 +332,7 @@ export default function AgenteComercial() {
         content: data.reply,
         time:    new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       }])
+      saveAgentMessage(AGENT, user?.id, 'assistant', data.reply)
 
       setHistory([
         ...currentHistory,
@@ -375,12 +384,14 @@ export default function AgenteComercial() {
   }
 
   function reset() {
-    setMessages([WELCOME_MSG])
-    setHistory([])
-    setPendingImages([])
-    setInput('')
-    setProposalData(null)
-    setSuccess(null)
+    clearAgentHistory(AGENT, user?.id, () => {
+      setMessages([WELCOME_MSG])
+      setHistory([])
+      setPendingImages([])
+      setInput('')
+      setProposalData(null)
+      setSuccess(null)
+    })
   }
 
   if (success) return <SuccessView success={success} onReset={reset} />
