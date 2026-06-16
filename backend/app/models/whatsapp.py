@@ -2,11 +2,11 @@ from pydantic import BaseModel
 from typing import Optional, Any
 
 
-class WhatsAppMessage(BaseModel):
-    """Payload enviado pela Evolution API no webhook."""
+class WAHAWebhookPayload(BaseModel):
+    """Payload enviado pelo WAHA no webhook."""
     event: str
-    instance: str
-    data: dict[str, Any]
+    session: str
+    payload: dict[str, Any]
 
 
 class IncomingMessage(BaseModel):

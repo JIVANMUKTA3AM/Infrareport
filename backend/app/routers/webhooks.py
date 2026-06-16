@@ -1,18 +1,17 @@
 """
-Webhook Evolution API — roteador de mensagens WhatsApp.
+Webhook WAHA (WhatsApp HTTP API) — roteador de mensagens WhatsApp.
 
 Fluxo:
-  1. Recebe mensagem do usuário
+  1. Recebe mensagem do usuário via WAHA webhook
   2. Identifica o engenheiro pelo telefone
   3. Detecta intenção: comercial vs financeiro vs ajuda
   4. Roteia para o agente correto
-  5. Responde via Evolution API
+  5. Responde via WAHA API
 """
-import json
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request
 
 from app.database import get_supabase
-from app.models.whatsapp import WhatsAppMessage, IncomingMessage
+from app.models.whatsapp import IncomingMessage
 from app.agents.financial import run_financial_agent
 from app.models.financial import FinancialMessageRequest
 from app.services.whatsapp import send_whatsapp_message
@@ -26,17 +25,23 @@ COMMERCIAL_KEYWORDS = ("proposta", "orçamento", "cliente", "serviço")
 
 
 def _parse_incoming(payload: dict) -> IncomingMessage | None:
-    """Extrai campos relevantes do payload da Evolution API."""
+    """Extrai campos do payload WAHA (event: message)."""
     try:
-        data = payload.get("data", {})
-        msg  = data.get("message", {})
-        key  = data.get("key", {})
-        body = msg.get("conversation") or msg.get("extendedTextMessage", {}).get("text", "")
+        # WAHA envia: { event, session, payload: { from, body, fromMe, ... } }
+        p = payload.get("payload", {})
+
+        # Ignora mensagens enviadas pelo próprio bot
+        if p.get("fromMe"):
+            return None
+
+        body = p.get("body", "").strip()
         if not body:
             return None
-        phone  = key.get("remoteJid", "").replace("@s.whatsapp.net", "")
-        name   = data.get("pushName") or phone
-        msg_id = key.get("id", "")
+
+        # "5511999999999@c.us" → "5511999999999"
+        phone  = p.get("from", "").split("@")[0]
+        name   = p.get("_data", {}).get("notifyName") or phone
+        msg_id = p.get("id", "")
         return IncomingMessage(phone=phone, name=name, body=body, message_id=msg_id)
     except Exception:
         return None
@@ -56,7 +61,8 @@ async def whatsapp_webhook(request: Request):
     payload = await request.json()
 
     # Ignora eventos que não sejam mensagens recebidas
-    if payload.get("event") not in ("messages.upsert",):
+    # WAHA: event = "message" | "message.any"
+    if payload.get("event") not in ("message", "message.any"):
         return {"status": "ignored"}
 
     msg = _parse_incoming(payload)
