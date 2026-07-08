@@ -119,6 +119,25 @@ async def get_stats(
         prev_sai   = sum(float(e["value"]) for e in prev if e["type"] == "saida")
         prev_saldo = prev_ent - prev_sai
 
+        # ── Labels dinâmicos de categorias (usa DB se migration 010 aplicada) ──
+        cat_map: dict[str, str] = {}
+        try:
+            cats_res = (
+                db.table("financial_categories")
+                .select("slug, name")
+                .eq("user_id", str(user_id))
+                .execute()
+            )
+            cat_map = {c["slug"]: c["name"] for c in (cats_res.data or [])}
+        except Exception:
+            pass
+
+        def _label_exp(k: str) -> str:
+            return cat_map.get(k) or CAT_LABELS_EXP.get(k, k)
+
+        def _label_inc(k: str) -> str:
+            return cat_map.get(k) or CAT_LABELS_IN.get(k, k)
+
         # ── Categorias de saída do mês (para PieChart Saídas) ────────────
         exp_cats: dict[str, float] = {}
         for e in curr:
@@ -126,7 +145,7 @@ async def get_stats(
                 cat = e.get("category") or "outro"
                 exp_cats[cat] = round(exp_cats.get(cat, 0) + float(e["value"]), 2)
         categories = [
-            {"category": CAT_LABELS_EXP.get(k, k), "total": v}
+            {"category": _label_exp(k), "total": v}
             for k, v in exp_cats.items()
         ]
 
@@ -137,7 +156,7 @@ async def get_stats(
                 cat = e.get("category") or "outro"
                 inc_cats[cat] = round(inc_cats.get(cat, 0) + float(e["value"]), 2)
         receita_tipos = [
-            {"category": CAT_LABELS_IN.get(k, k), "total": v}
+            {"category": _label_inc(k), "total": v}
             for k, v in inc_cats.items()
         ]
 

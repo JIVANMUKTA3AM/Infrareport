@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useCategories } from '../hooks/useCategories'
 import {
   Plus, X, Loader2, Trash2, Edit2, Search,
   TrendingDown, ChevronLeft, ChevronRight, AlertCircle, ExternalLink,
@@ -10,18 +11,6 @@ const API = ''
 const MONTHS_PT    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
-const CATEGORIES = {
-  material:         'Material / Insumos',
-  equipamento:      'Equipamentos',
-  mao_de_obra:      'Mão de Obra',
-  deslocamento:     'Deslocamento',
-  combustivel:      'Combustível',
-  alimentacao:      'Alimentação',
-  servico_terceiro: 'Serviços Terceiros',
-  manutencao:       'Manutenção',
-  outro:            'Outro',
-}
-
 const PAYMENT_METHODS = {
   pix:          'PIX',
   dinheiro:     'Dinheiro',
@@ -31,27 +20,17 @@ const PAYMENT_METHODS = {
   cheque:       'Cheque',
 }
 
-const CAT_COLORS = {
-  material:         { bg: '#FEE2E2', text: '#B91C1C' },
-  equipamento:      { bg: '#FEF3C7', text: '#B45309' },
-  mao_de_obra:      { bg: '#DBEAFE', text: '#1D4ED8' },
-  deslocamento:     { bg: '#D1FAE5', text: '#065F46' },
-  combustivel:      { bg: '#FED7AA', text: '#C2410C' },
-  alimentacao:      { bg: '#F3E8FF', text: '#7E22CE' },
-  servico_terceiro: { bg: '#E0F2FE', text: '#0369A1' },
-  manutencao:       { bg: '#FCE7F3', text: '#9D174D' },
-  outro:            { bg: '#F1F5F9', text: '#475569' },
-}
-
 const PAY_ICONS = {
   pix: '⚡', dinheiro: '💵', cartao: '💳', boleto: '📄', transferencia: '🏦', cheque: '📝',
 }
+
+const catStyle = (color = '#64748B') => ({ background: color + '26', color })
 
 const fmtBRL  = (v) => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const fmtDate = (iso) => { if (!iso) return ''; const [y,m,d] = iso.split('T')[0].split('-'); return `${d}/${m}/${y}` }
 
 // ── EntryModal ────────────────────────────────────────────────────────────────
-function EntryModal({ initial, userId, onClose, onSaved, onDeleted }) {
+function EntryModal({ initial, userId, categories, onClose, onSaved, onDeleted }) {
   const isEdit = !!initial?.id
   const today  = new Date().toISOString().split('T')[0]
 
@@ -176,7 +155,9 @@ function EntryModal({ initial, userId, onClose, onSaved, onDeleted }) {
             <div>
               <label className="block text-[11px] text-slate-400 uppercase tracking-wide mb-1">Categoria</label>
               <select value={form.category} onChange={e => set('category', e.target.value)} className={inp}>
-                {Object.entries(CATEGORIES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {categories.filter(c => c.is_active).map(c => (
+                  <option key={c.slug} value={c.slug}>{c.icon} {c.name}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -269,6 +250,9 @@ function KPI({ label, value, sub, color = '#EF4444' }) {
 export default function Saidas() {
   const { user }  = useAuth()
   const userId    = user?.id
+
+  const { categories } = useCategories(userId, 'saida')
+  const catMap = useMemo(() => Object.fromEntries(categories.map(c => [c.slug, c])), [categories])
 
   const now   = new Date()
   const [month,   setMonth]   = useState(now.getMonth() + 1)
@@ -371,7 +355,7 @@ export default function Saidas() {
         <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
           className="px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-red-400">
           <option value="">Todas as categorias</option>
-          {Object.entries(CATEGORIES).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+          {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
         </select>
       </div>
 
@@ -413,8 +397,9 @@ export default function Saidas() {
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {filtered.map(e => {
-                    const catCfg   = CAT_COLORS[e.category] || CAT_COLORS.outro
-                    const catLabel = CATEGORIES[e.category] || e.category || 'Outro'
+                    const cat      = catMap[e.category]
+                    const catLabel = cat?.name  || e.category || 'Outro'
+                    const catColor = cat?.color || '#64748B'
                     const pay      = e.payment_method || 'pix'
                     return (
                       <tr key={e.id} className="hover:bg-slate-50/50 transition">
@@ -433,7 +418,7 @@ export default function Saidas() {
                         </td>
                         <td className="px-5 py-3.5 hidden md:table-cell">
                           <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                            style={{ background: catCfg.bg, color: catCfg.text }}>{catLabel}</span>
+                            style={catStyle(catColor)}>{catLabel}</span>
                         </td>
                         <td className="px-5 py-3.5 hidden lg:table-cell text-sm text-slate-600">
                           {PAY_ICONS[pay]} {PAYMENT_METHODS[pay] || pay}
@@ -471,6 +456,7 @@ export default function Saidas() {
         <EntryModal
           initial={editEntry}
           userId={userId}
+          categories={categories}
           onClose={() => { setModal(false); setEditEntry(null) }}
           onSaved={handleSaved}
           onDeleted={handleDeleted}
