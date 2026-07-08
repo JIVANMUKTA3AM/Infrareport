@@ -23,6 +23,8 @@ const EVENT_TYPE_COLORS = {
 
 const fmtBRL = (v) => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
 
+const MONTHS_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+
 function fmtDateShort(iso) {
   if (!iso) return ''
   const [, m, d] = iso.split('T')[0].split('-')
