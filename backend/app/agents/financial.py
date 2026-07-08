@@ -20,10 +20,14 @@ Se for uma TRANSAÇÃO (registrar entrada ou saída de dinheiro), retorne:
   "tipo_msg": "transacao",
   "type": "entrada" ou "saida",
   "value": número positivo,
-  "category": "material" | "mão de obra" | "equipamento" | "receita" | "outro",
-  "description": string resumida,
-  "date": "YYYY-MM-DD"
+  "category": uma das categorias abaixo,
+  "description": string resumida em português,
+  "supplier": nome do fornecedor/prestador se mencionado (null caso contrário),
+  "date": "YYYY-MM-DD" (data de hoje se não mencionada)
 }
+
+Categorias para SAÍDA: "material" | "equipamento" | "mao_de_obra" | "deslocamento" | "combustivel" | "alimentacao" | "servico_terceiro" | "manutencao" | "outro"
+Categorias para ENTRADA: "receita" | "contrato" | "venda" | "adiantamento" | "outro"
 
 Se for uma CONSULTA (saldo, relatório, resumo, histórico, etc), retorne:
 {
@@ -31,12 +35,14 @@ Se for uma CONSULTA (saldo, relatório, resumo, histórico, etc), retorne:
 }
 
 Exemplos:
-- "gastei R$386 em material elétrico" → tipo_msg: transacao, type: saida
-- "recebi R$2500 do cliente Alfa"    → tipo_msg: transacao, type: entrada
-- "paguei R$150 ao ajudante"         → tipo_msg: transacao, type: saida
-- "qual meu saldo?"                  → tipo_msg: consulta
-- "gere um relatório mensal"         → tipo_msg: consulta
-- "quanto entrou este mês?"          → tipo_msg: consulta
+- "gastei R$386 em material elétrico"      → saida, category: material
+- "comprei cabos na Elétrica Silva"        → saida, category: material, supplier: Elétrica Silva
+- "paguei R$150 ao ajudante João"          → saida, category: mao_de_obra, supplier: João
+- "abasteci o carro R$180"                 → saida, category: combustivel
+- "recebi R$2500 do cliente Alfa"          → entrada, category: receita
+- "recebi adiantamento de R$800 pela OS 12"→ entrada, category: adiantamento
+- "qual meu saldo?"                        → consulta
+- "gere um relatório mensal"               → consulta
 """
 
 
@@ -91,7 +97,7 @@ async def run_financial_agent(req: FinancialMessageRequest) -> FinancialMessageR
     entry_date = entry_data.get("date") or date.today().isoformat()
     entry_id   = uuid4()
 
-    db.table("financial_entries").insert({
+    row = {
         "id":          str(entry_id),
         "user_id":     str(req.user_id),
         "project_id":  str(req.project_id) if req.project_id else None,
@@ -100,7 +106,14 @@ async def run_financial_agent(req: FinancialMessageRequest) -> FinancialMessageR
         "category":    entry_data.get("category", "outro"),
         "description": entry_data.get("description", req.message[:200]),
         "date":        entry_date,
-    }).execute()
+    }
+    try:
+        if entry_data.get("supplier"):
+            row["supplier"] = entry_data["supplier"]
+        db.table("financial_entries").insert(row).execute()
+    except Exception:
+        row.pop("supplier", None)
+        db.table("financial_entries").insert(row).execute()
 
     # ── 4. Saldo atualizado ────────────────────────────────
     balance    = _get_balance(db, str(req.user_id))

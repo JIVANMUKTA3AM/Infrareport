@@ -19,8 +19,19 @@ CAT_LABELS_IN  = {
     "contrato":     "Contrato Recorrente",
     "venda":        "Venda de Material",
     "adiantamento": "Adiantamento",
-    "material":     "Material",
     "outro":        "Outro",
+}
+
+CAT_LABELS_EXP = {
+    "material":         "Material / Insumos",
+    "equipamento":      "Equipamentos",
+    "mao_de_obra":      "Mão de Obra",
+    "deslocamento":     "Deslocamento",
+    "combustivel":      "Combustível",
+    "alimentacao":      "Alimentação",
+    "servico_terceiro": "Serviços Terceiros",
+    "manutencao":       "Manutenção",
+    "outro":            "Outro",
 }
 
 
@@ -114,7 +125,10 @@ async def get_stats(
             if e["type"] == "saida":
                 cat = e.get("category") or "outro"
                 exp_cats[cat] = round(exp_cats.get(cat, 0) + float(e["value"]), 2)
-        categories = [{"category": k, "total": v} for k, v in exp_cats.items()]
+        categories = [
+            {"category": CAT_LABELS_EXP.get(k, k), "total": v}
+            for k, v in exp_cats.items()
+        ]
 
         # ── Categorias de entrada do mês (para PieChart Receitas) ────────
         inc_cats: dict[str, float] = {}
@@ -155,26 +169,51 @@ async def get_stats(
                 .limit(10)
                 .execute()
             )
+            raw_projects = proj_result.data or []
+
+            # Custo real: soma de saídas vinculadas ao projeto
+            proj_costs: dict[str, float] = {}
+            if raw_projects:
+                pids = [p["id"] for p in raw_projects]
+                try:
+                    costs_res = (
+                        db.table("financial_entries")
+                        .select("project_id, value")
+                        .eq("user_id", str(user_id))
+                        .eq("type", "saida")
+                        .in_("project_id", pids)
+                        .execute()
+                    )
+                    for e in (costs_res.data or []):
+                        pid = e["project_id"]
+                        proj_costs[pid] = round(proj_costs.get(pid, 0) + float(e["value"]), 2)
+                except Exception:
+                    pass
+
             projects_data   = []
             active_count    = 0
             completed_count = 0
 
-            for p in (proj_result.data or []):
-                rev    = float(p.get("revenue") or 0)
-                mat    = float(p.get("material_cost") or 0)
-                lab    = float(p.get("labor_cost") or 0)
-                cost   = mat + lab
+            for p in raw_projects:
+                rev        = float(p.get("revenue") or 0)
+                mat        = float(p.get("material_cost") or 0)
+                lab        = float(p.get("labor_cost") or 0)
+                manual_cost = mat + lab
+                real_cost   = proj_costs.get(p["id"], 0)
+                # Use real entries cost if any entries exist; fall back to manual fields
+                cost   = real_cost if real_cost > 0 else manual_cost
                 margin = round((rev - cost) / rev * 100, 1) if rev > 0 else 0.0
 
                 projects_data.append({
-                    "id":      p["id"],
-                    "name":    p["name"],
-                    "client":  p.get("client", ""),
-                    "revenue": rev,
-                    "cost":    cost,
-                    "margin":  margin,
-                    "status":  p["status"],
-                    "segment": p.get("segment", ""),
+                    "id":        p["id"],
+                    "name":      p["name"],
+                    "client":    p.get("client", ""),
+                    "revenue":   rev,
+                    "cost":      cost,
+                    "margin":    margin,
+                    "status":    p["status"],
+                    "segment":   p.get("segment", ""),
+                    "has_entries": real_cost > 0,
                 })
                 if p["status"] == "em_andamento":
                     active_count += 1

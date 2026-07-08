@@ -73,15 +73,18 @@ async def create_entry(body: EntryCreate):
             "date":        (body.date or date_cls.today()).isoformat(),
             "project_id":  str(body.project_id) if body.project_id else None,
         }
-        # Colunas adicionadas pela migração 008 — graceful fallback se ainda não aplicada
+        # Colunas adicionadas pelas migrações 008/009 — graceful fallback se ainda não aplicadas
         try:
             row["payment_method"] = body.payment_method
             if body.attachment_url:
                 row["attachment_url"] = body.attachment_url
+            if body.supplier:
+                row["supplier"] = body.supplier
             result = db.table("financial_entries").insert(row).execute()
         except Exception:
             row.pop("payment_method", None)
             row.pop("attachment_url", None)
+            row.pop("supplier", None)
             result = db.table("financial_entries").insert(row).execute()
 
         if not result.data:

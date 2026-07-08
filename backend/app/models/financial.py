@@ -30,3 +30,4 @@ class EntryCreate(BaseModel):
     payment_method: str = "pix"
     project_id: Optional[UUID] = None
     attachment_url: Optional[str] = None
+    supplier: Optional[str] = None
