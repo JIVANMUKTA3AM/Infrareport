@@ -18,6 +18,7 @@ import Entradas          from './pages/Entradas'
 import Saidas            from './pages/Saidas'
 import Categorias        from './pages/Categorias'
 import AgenteFinanceiro  from './pages/AgenteFinanceiro'
+import Relatorios        from './pages/Relatorios'
 import { Loader2 }  from 'lucide-react'
 
 const PAGE_LABELS = {
@@ -49,6 +50,7 @@ function PageContent({ page }) {
   if (page === 'categorias')        return <Categorias />
   if (page === 'agente-financeiro') return <AgenteFinanceiro />
   if (page === 'agente-comercial')  return <AgenteComercial />
+  if (page === 'relatorios')        return <Relatorios />
   return <Placeholder title={PAGE_LABELS[page] || page} />
 }
 
