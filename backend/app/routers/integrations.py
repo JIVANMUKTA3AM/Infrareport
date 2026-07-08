@@ -17,10 +17,11 @@ from app.database import get_supabase
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
-GOOGLE_AUTH_URL  = "https://accounts.google.com/o/oauth2/v2/auth"
-GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-GMAIL_SCOPE      = "https://www.googleapis.com/auth/gmail.send"
-USERINFO_SCOPE   = "https://www.googleapis.com/auth/userinfo.email"
+GOOGLE_AUTH_URL   = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL  = "https://oauth2.googleapis.com/token"
+GMAIL_SCOPE       = "https://www.googleapis.com/auth/gmail.send"
+CALENDAR_SCOPE    = "https://www.googleapis.com/auth/calendar.events"
+USERINFO_SCOPE    = "https://www.googleapis.com/auth/userinfo.email"
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -103,7 +104,7 @@ async def gmail_auth_url(authorization: str = Header(None)):
         "client_id":     cfg.google_client_id,
         "redirect_uri":  cfg.google_redirect_uri,
         "response_type": "code",
-        "scope":         f"{GMAIL_SCOPE} {USERINFO_SCOPE}",
+        "scope":         f"{GMAIL_SCOPE} {CALENDAR_SCOPE} {USERINFO_SCOPE}",
         "access_type":   "offline",
         "prompt":        "consent",   # força refresh_token sempre
     }

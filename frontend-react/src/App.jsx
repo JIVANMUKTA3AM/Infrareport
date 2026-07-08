@@ -13,6 +13,7 @@ import AgenteComercial   from './pages/AgenteComercial'
 import Placeholder       from './pages/Placeholder'
 import Propostas         from './pages/Propostas'
 import Projetos          from './pages/Projetos'
+import Agenda            from './pages/Agenda'
 import AgenteFinanceiro  from './pages/AgenteFinanceiro'
 import { Loader2 }  from 'lucide-react'
 
@@ -39,6 +40,7 @@ function PageContent({ page }) {
   if (page === 'configuracoes')   return <Configuracoes />
   if (page === 'propostas')         return <Propostas />
   if (page === 'projetos')          return <Projetos />
+  if (page === 'agenda')            return <Agenda />
   if (page === 'agente-financeiro') return <AgenteFinanceiro />
   if (page === 'agente-comercial')  return <AgenteComercial />
   return <Placeholder title={PAGE_LABELS[page] || page} />
