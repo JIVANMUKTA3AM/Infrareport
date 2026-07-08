@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, RefreshCw, MessageSquarePlus, DollarSign, ArrowUpCircle, ArrowDownCircle, PieChart } from 'lucide-react'
-import { KPI_CURRENT } from '../data/mock'
 import { useAuth } from '../context/AuthContext'
 import { useAgentHistory, saveAgentMessage, clearAgentHistory } from '../hooks/useAgentHistory'
 
@@ -86,11 +85,20 @@ export default function AgenteFinanceiro() {
   const [messages, setMessages] = useState([WELCOME_MSG])
   const [input,    setInput]    = useState('')
   const [loading,  setLoading]  = useState(false)
+  const [summary,  setSummary]  = useState({ entradas: 0, saidas: 0, saldo: 0, acumulado: 0, month_name: '...' })
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
 
   // Carrega histórico do Supabase
   useAgentHistory(AGENT, user?.id, setMessages)
+
+  useEffect(() => {
+    if (!user?.id) return
+    fetch(`${API_BASE}/api/financial/summary?user_id=${user.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setSummary(d) })
+      .catch(() => {})
+  }, [user?.id])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -213,10 +221,10 @@ export default function AgenteFinanceiro() {
             </h4>
             <div className="space-y-3">
               {[
-                { label: 'Entradas (mar)', value: KPI_CURRENT.entradas, color: 'text-emerald-600' },
-                { label: 'Saídas (mar)',   value: KPI_CURRENT.saidas,   color: 'text-red-500' },
-                { label: 'Saldo do mês',  value: KPI_CURRENT.saldo,    color: 'text-blue-600' },
-                { label: 'Acumulado',     value: KPI_CURRENT.acumulado, color: 'text-slate-800' },
+                { label: `Entradas (${summary.month_name})`, value: summary.entradas,  color: 'text-emerald-600' },
+                { label: `Saídas (${summary.month_name})`,   value: summary.saidas,    color: 'text-red-500' },
+                { label: 'Saldo do mês',                     value: summary.saldo,     color: 'text-blue-600' },
+                { label: 'Acumulado',                        value: summary.acumulado, color: 'text-slate-800' },
               ].map((row, i, arr) => (
                 <div key={row.label}
                   className={`flex justify-between items-center text-[0.85rem] pb-3 ${i < arr.length - 1 ? 'border-b border-slate-100' : ''}`}>

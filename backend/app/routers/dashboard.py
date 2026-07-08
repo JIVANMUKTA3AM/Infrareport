@@ -1,14 +1,33 @@
 """
-Router do Dashboard — retorna estatísticas reais via RPC Supabase
-e injeta dados de projetos com margem calculada (defensivo: suporta
-banco sem a migração 006 aplicada).
+Dashboard stats — calcula tudo diretamente (sem depender de RPC get_dashboard_stats).
+Retorna dados reais de financial_entries + projects.
 """
+import calendar as cal_mod
 from datetime import date
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
+
 from app.database import get_supabase
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+
+MONTHS_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+
+CAT_LABELS_IN  = {
+    "receita":      "Serviço / OS",
+    "contrato":     "Contrato Recorrente",
+    "venda":        "Venda de Material",
+    "adiantamento": "Adiantamento",
+    "material":     "Material",
+    "outro":        "Outro",
+}
+
+
+def _pct(curr: float, prev: float) -> float | None:
+    if prev == 0:
+        return None
+    return round((curr - prev) / prev * 100, 1)
 
 
 @router.get("/stats")
@@ -24,13 +43,108 @@ async def get_stats(
     try:
         db = get_supabase()
 
-        rpc_result = db.rpc(
-            "get_dashboard_stats",
-            {"p_user_id": str(user_id), "p_month": m, "p_year": y}
-        ).execute()
-        stats = rpc_result.data or {}
+        # ── Todas as entradas do ano atual ────────────────────────────────
+        year_res = (
+            db.table("financial_entries")
+            .select("type, value, category, date")
+            .eq("user_id", str(user_id))
+            .gte("date", f"{y}-01-01")
+            .lte("date", f"{y}-12-31")
+            .execute()
+        )
+        year_entries = year_res.data or []
 
-        # Tenta enriquecer com dados reais de projetos (requer migração 006)
+        # ── Acumulado all-time via RPC (eficiente) ────────────────────────
+        try:
+            bal = db.rpc("get_balance", {"p_user_id": str(user_id)}).execute()
+            acumulado = round(float(bal.data or 0), 2)
+        except Exception:
+            acumulado = round(
+                sum(
+                    float(e["value"]) if e["type"] == "entrada" else -float(e["value"])
+                    for e in year_entries
+                ), 2
+            )
+
+        # ── Monthly breakdown (12 meses do ano) ──────────────────────────
+        monthly = []
+        for mi in range(1, 13):
+            tag    = f"{mi:02d}"
+            mrows  = [e for e in year_entries if e["date"][5:7] == tag]
+            ent    = round(sum(float(e["value"]) for e in mrows if e["type"] == "entrada"), 2)
+            sai    = round(sum(float(e["value"]) for e in mrows if e["type"] == "saida"),   2)
+            monthly.append({"mes": MONTHS_PT[mi - 1], "entradas": ent, "saidas": sai, "saldo": round(ent - sai, 2)})
+
+        # ── KPIs do mês atual ─────────────────────────────────────────────
+        curr_tag = f"{m:02d}"
+        curr     = [e for e in year_entries if e["date"][5:7] == curr_tag]
+        entradas = round(sum(float(e["value"]) for e in curr if e["type"] == "entrada"), 2)
+        saidas   = round(sum(float(e["value"]) for e in curr if e["type"] == "saida"),   2)
+        saldo    = round(entradas - saidas, 2)
+
+        # ── KPIs do mês anterior (para %) ────────────────────────────────
+        pm  = 12 if m == 1 else m - 1
+        py  = y - 1 if m == 1 else y
+        ptag = f"{pm:02d}"
+
+        if py == y:
+            prev = [e for e in year_entries if e["date"][5:7] == ptag]
+        else:
+            try:
+                last_pm  = cal_mod.monthrange(py, pm)[1]
+                prev_res = (
+                    db.table("financial_entries")
+                    .select("type, value")
+                    .eq("user_id", str(user_id))
+                    .gte("date", f"{py}-{ptag}-01")
+                    .lte("date", f"{py}-{ptag}-{last_pm:02d}")
+                    .execute()
+                )
+                prev = prev_res.data or []
+            except Exception:
+                prev = []
+
+        prev_ent   = sum(float(e["value"]) for e in prev if e["type"] == "entrada")
+        prev_sai   = sum(float(e["value"]) for e in prev if e["type"] == "saida")
+        prev_saldo = prev_ent - prev_sai
+
+        # ── Categorias de saída do mês (para PieChart Saídas) ────────────
+        exp_cats: dict[str, float] = {}
+        for e in curr:
+            if e["type"] == "saida":
+                cat = e.get("category") or "outro"
+                exp_cats[cat] = round(exp_cats.get(cat, 0) + float(e["value"]), 2)
+        categories = [{"category": k, "total": v} for k, v in exp_cats.items()]
+
+        # ── Categorias de entrada do mês (para PieChart Receitas) ────────
+        inc_cats: dict[str, float] = {}
+        for e in curr:
+            if e["type"] == "entrada":
+                cat = e.get("category") or "outro"
+                inc_cats[cat] = round(inc_cats.get(cat, 0) + float(e["value"]), 2)
+        receita_tipos = [
+            {"category": CAT_LABELS_IN.get(k, k), "total": v}
+            for k, v in inc_cats.items()
+        ]
+
+        has_data = len(year_entries) > 0 or acumulado != 0
+
+        stats: dict = {
+            "has_data":       has_data,
+            "entradas":       entradas,
+            "saidas":         saidas,
+            "saldo":          saldo,
+            "acumulado":      acumulado,
+            "entradas_pct":   _pct(entradas, prev_ent),
+            "saidas_pct":     _pct(saidas, prev_sai),
+            "saldo_pct":      _pct(saldo, prev_saldo),
+            "acumulado_pct":  None,
+            "monthly":        monthly,
+            "categories":     categories,
+            "receita_tipos":  receita_tipos,
+        }
+
+        # ── Projetos (requer migração 006) ───────────────────────────────
         try:
             proj_result = (
                 db.table("projects")
@@ -41,16 +155,15 @@ async def get_stats(
                 .limit(10)
                 .execute()
             )
-
-            projects_data = []
+            projects_data   = []
             active_count    = 0
             completed_count = 0
 
             for p in (proj_result.data or []):
-                rev  = float(p.get("revenue") or 0)
-                mat  = float(p.get("material_cost") or 0)
-                lab  = float(p.get("labor_cost") or 0)
-                cost = mat + lab
+                rev    = float(p.get("revenue") or 0)
+                mat    = float(p.get("material_cost") or 0)
+                lab    = float(p.get("labor_cost") or 0)
+                cost   = mat + lab
                 margin = round((rev - cost) / rev * 100, 1) if rev > 0 else 0.0
 
                 projects_data.append({
@@ -63,22 +176,20 @@ async def get_stats(
                     "status":  p["status"],
                     "segment": p.get("segment", ""),
                 })
-
                 if p["status"] == "em_andamento":
                     active_count += 1
                 else:
                     completed_count += 1
 
-            if isinstance(stats, dict):
-                stats["projects"] = {
-                    "active":    active_count,
-                    "completed": completed_count,
-                    "list":      projects_data,
-                }
-
+            stats["projects"] = {
+                "active":    active_count,
+                "completed": completed_count,
+                "list":      projects_data,
+            }
         except Exception:
-            pass  # migração 006 ainda não foi aplicada — retorna dados do RPC sem projetos
+            pass
 
         return stats
+
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
