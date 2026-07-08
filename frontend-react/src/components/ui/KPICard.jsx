@@ -35,10 +35,12 @@ const THEMES = {
   },
 }
 
-export default function KPICard({ label, value, icon, pct, color, delay = 0 }) {
+export default function KPICard({ label, value, icon, pct, color, delay = 0, prevLabel = '' }) {
   const t   = THEMES[color] || THEMES.blue
   const up  = pct > 0
-  const neu = pct === 0
+  const neu = pct === 0 || pct == null
+
+  const vsLabel = prevLabel ? ` vs ${prevLabel}` : ''
 
   return (
     <div
@@ -102,15 +104,15 @@ export default function KPICard({ label, value, icon, pct, color, delay = 0 }) {
       <div className="flex items-center gap-1.5 relative">
         {neu ? (
           <span className="badge-neu flex items-center gap-1">
-            <Minus size={10} /> Estável
+            <Minus size={10} /> {prevLabel ? `Estável${vsLabel}` : 'Sem dados anteriores'}
           </span>
         ) : up ? (
           <span className="badge-up flex items-center gap-1">
-            <TrendingUp size={10} /> +{Math.abs(pct)}% vs fev
+            <TrendingUp size={10} /> +{Math.abs(pct)}%{vsLabel}
           </span>
         ) : (
           <span className="badge-down flex items-center gap-1">
-            <TrendingDown size={10} /> -{Math.abs(pct)}% vs fev
+            <TrendingDown size={10} /> -{Math.abs(pct)}%{vsLabel}
           </span>
         )}
       </div>

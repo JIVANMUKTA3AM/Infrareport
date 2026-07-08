@@ -31,6 +31,7 @@ function fmtDateShort(iso) {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState() {
+  const go = (hash) => { window.location.hash = hash }
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-5 animate-fade-up">
       <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -44,16 +45,18 @@ function EmptyState() {
         </p>
       </div>
       <div className="flex gap-3 flex-wrap justify-center">
-        <a href="#entradas"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.78rem] font-bold text-white transition-all hover:-translate-y-px no-underline"
+        <button
+          onClick={() => go('#entradas')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.78rem] font-bold text-white transition-all hover:-translate-y-px"
           style={{ background:'linear-gradient(135deg,#059669,#10B981)', boxShadow:'0 4px 16px rgba(16,185,129,0.35)' }}>
           <PlusCircle size={14} /> Registrar Entrada
-        </a>
-        <a href="#agente-financeiro"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.78rem] font-bold text-slate-600 transition-all hover:-translate-y-px no-underline"
+        </button>
+        <button
+          onClick={() => go('#agente-financeiro')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.78rem] font-bold text-slate-600 transition-all hover:-translate-y-px"
           style={{ background:'rgba(255,255,255,0.9)', border:'1px solid rgba(37,99,235,0.15)', boxShadow:'0 2px 8px rgba(37,99,235,0.07)' }}>
           <MessageSquarePlus size={14} /> Usar Agente Financeiro
-        </a>
+        </button>
       </div>
     </div>
   )
@@ -158,6 +161,7 @@ export default function Dashboard() {
   const userId    = user?.id
   const [month]   = useState(new Date().getMonth() + 1)
   const [year]    = useState(new Date().getFullYear())
+  const prevMonthLabel = MONTHS_PT[(month - 2 + 12) % 12]
   const { data, loading, error, refetch } = useDashboardData(userId, month, year)
 
   const hasData = data?.has_data
@@ -175,10 +179,10 @@ export default function Dashboard() {
   )
 
   const KPIS = [
-    { label:'Total Entradas',  value:fmtBRL(kpiData.entradas),  icon:'💰', pct:kpiData.entradas_pct  ?? 0, color:'green', delay:0   },
-    { label:'Total Saídas',    value:fmtBRL(kpiData.saidas),    icon:'📤', pct:kpiData.saidas_pct    ?? 0, color:'red',   delay:80  },
-    { label:'Saldo do Mês',    value:fmtBRL(kpiData.saldo),     icon:'📊', pct:kpiData.saldo_pct     ?? 0, color:'blue',  delay:160 },
-    { label:'Saldo Acumulado', value:fmtBRL(kpiData.acumulado), icon:'🏦', pct:kpiData.acumulado_pct ?? 0, color:'gold',  delay:240 },
+    { label:'Total Entradas',  value:fmtBRL(kpiData.entradas),  icon:'💰', pct:kpiData.entradas_pct,  color:'green', delay:0,   prevLabel: prevMonthLabel },
+    { label:'Total Saídas',    value:fmtBRL(kpiData.saidas),    icon:'📤', pct:kpiData.saidas_pct,    color:'red',   delay:80,  prevLabel: prevMonthLabel },
+    { label:'Saldo do Mês',    value:fmtBRL(kpiData.saldo),     icon:'📊', pct:kpiData.saldo_pct,     color:'blue',  delay:160, prevLabel: prevMonthLabel },
+    { label:'Saldo Acumulado', value:fmtBRL(kpiData.acumulado), icon:'🏦', pct:null,                  color:'gold',  delay:240, prevLabel: '' },
   ]
 
   if (error) return (
@@ -244,11 +248,11 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-4 gap-4">
             <ChartCard title="Receitas por Tipo" subtitle="Entradas do mês">
-              <PieDonut data={receita_tipos} />
+              <PieDonut data={receita_tipos} emptyLabel="Sem entradas este mês" />
             </ChartCard>
 
             <ChartCard title="Saídas por Categoria" subtitle="Distribuição no mês">
-              <PieDonut data={saidas_cats} />
+              <PieDonut data={saidas_cats} emptyLabel="Sem saídas este mês" />
             </ChartCard>
 
             {/* Projetos em Andamento */}

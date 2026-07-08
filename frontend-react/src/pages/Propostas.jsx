@@ -440,23 +440,22 @@ export default function Propostas() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table — 5 cols, padding compacto para caber em 820px (1050px viewport − 230px sidebar) */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse" style={{ minWidth: 580 }}>
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-6 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Cliente</th>
-                <th className="px-6 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Serviço</th>
-                <th className="px-6 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Valor</th>
-                <th className="px-6 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Status</th>
-                <th className="px-6 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Data</th>
-                <th className="px-6 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Ações</th>
+                <th className="px-4 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Cliente</th>
+                <th className="px-4 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Serviço</th>
+                <th className="px-4 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Valor</th>
+                <th className="px-4 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Status</th>
+                <th className="px-4 py-3 text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={5} className="px-4 py-12 text-center">
                     <div className="flex items-center justify-center gap-2 text-slate-400">
                       <RefreshCw size={18} className="animate-spin" />
                       <span className="text-[0.85rem]">Carregando propostas...</span>
@@ -465,14 +464,14 @@ export default function Propostas() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={5} className="px-4 py-12 text-center">
                     <div className="text-red-500 text-[0.85rem]">⚠️ {error}</div>
                     <button onClick={fetchPropostas} className="mt-2 text-blue-600 text-[0.8rem] underline">Tentar novamente</button>
                   </td>
                 </tr>
               ) : filteredPropostas.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
                     <div className="text-4xl mb-3">📭</div>
                     <p className="text-[0.85rem]">Nenhuma proposta encontrada.</p>
                   </td>
@@ -484,39 +483,49 @@ export default function Propostas() {
                   const valor = p.value || p.total_value || 0
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-lg">
+                      {/* Cliente + data (fusão) */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-base shrink-0">
                             {iconMap[p.segment?.toLowerCase()] || '📄'}
                           </div>
-                          <div>
-                            <div className="font-semibold text-slate-800 text-[0.85rem]">{p.client_name}</div>
-                            <div className="text-slate-400 text-[0.75rem]">{p.client_email}</div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-800 text-[0.82rem] truncate max-w-[160px]">{p.client_name}</div>
+                            <div className="text-slate-400 text-[0.68rem]">
+                              {p.client_email
+                                ? <span className="truncate max-w-[140px] block">{p.client_email}</span>
+                                : new Date(p.created_at).toLocaleDateString('pt-BR')}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-[0.8rem] text-slate-600 max-w-[200px] truncate">
-                        {p.service}
+                      <td className="px-4 py-3 text-[0.78rem] text-slate-600 max-w-[180px]">
+                        <span className="line-clamp-2 leading-snug">{p.service}</span>
                       </td>
-                      <td className="px-6 py-4 text-[0.85rem] font-bold text-slate-800">
+                      <td className="px-4 py-3 text-[0.83rem] font-bold text-slate-800 whitespace-nowrap">
                         {formatBRL(valor)}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         <StatusBadge status={s} />
                       </td>
-                      <td className="px-6 py-4 text-[0.75rem] text-slate-500">
-                        {new Date(p.created_at).toLocaleDateString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                           <ActionButton icon={Eye} label="Ver" onClick={() => openDetail(p)} />
-                          <ActionButton icon={Download} label=".docx" onClick={() => downloadProposal(p.id, 'docx')} color="blue" />
+
+                          {/* Download — ícone apenas */}
+                          <button
+                            onClick={() => downloadProposal(p.id, 'docx')}
+                            title="Baixar .docx"
+                            className="p-1.5 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
+                            <Download size={13} strokeWidth={2.5} />
+                          </button>
 
                           {(s === 'pendente' || s === 'draft' || s === 'enviada') && (
-                            <ActionButton icon={CheckCircle} label="Aprovar" onClick={() => handleApprove(p.id)} color="emerald" />
+                            <ActionButton icon={CheckCircle} label="OK" onClick={() => handleApprove(p.id)} color="emerald" />
                           )}
                           {(s !== 'aprovada' && s !== 'rejeitada') && (
-                            <ActionButton icon={XCircle} label="Rejeitar" onClick={() => handleReject(p.id)} color="red" />
+                            <ActionButton icon={XCircle} label="Negar" onClick={() => handleReject(p.id)} color="red" />
                           )}
                         </div>
                       </td>

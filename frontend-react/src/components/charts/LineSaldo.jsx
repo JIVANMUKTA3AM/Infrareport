@@ -2,6 +2,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { TrendingUp } from 'lucide-react'
 
 const fmt = (v) => `R$${(v / 1000).toFixed(0)}k`
 
@@ -16,7 +17,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             <span className="w-2 h-2 rounded-full" style={{ background: p.stroke }} />
             <span className="text-white/70">{p.name}</span>
           </div>
-          <span className="font-bold text-white">R$ {p.value.toLocaleString('pt-BR')}</span>
+          <span className="font-bold text-white">R$ {(p.value || 0).toLocaleString('pt-BR')}</span>
         </div>
       ))}
     </div>
@@ -24,6 +25,19 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function LineSaldo({ data }) {
+  const hasAny = Array.isArray(data) && data.some(r => (r.saldo || 0) !== 0 || (r.acumulado || 0) !== 0)
+
+  if (!hasAny) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[240px] gap-2 text-center">
+        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+          <TrendingUp size={16} className="text-slate-300" />
+        </div>
+        <p className="text-[0.75rem] text-slate-400 font-medium">Sem movimentações no ano</p>
+      </div>
+    )
+  }
+
   return (
     <ResponsiveContainer width="100%" height={240}>
       <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>

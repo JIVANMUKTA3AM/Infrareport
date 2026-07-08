@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart as PieIcon } from 'lucide-react'
 
-const fmtBRL = (v) => `R$ ${v.toLocaleString('pt-BR')}`
+const fmtBRL = (v) => `R$ ${Number(v || 0).toLocaleString('pt-BR')}`
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
@@ -32,8 +33,22 @@ const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) =>
   )
 }
 
-export default function PieDonut({ data }) {
-  const total = data.reduce((s, d) => s + d.value, 0)
+function ChartEmpty({ label = 'Sem lançamentos este mês' }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+        <PieIcon size={16} className="text-slate-300" />
+      </div>
+      <p className="text-[0.75rem] text-slate-400 font-medium">{label}</p>
+    </div>
+  )
+}
+
+export default function PieDonut({ data, emptyLabel }) {
+  if (!data?.length) return <ChartEmpty label={emptyLabel} />
+
+  const total = data.reduce((s, d) => s + (d.value || 0), 0)
+  if (total === 0) return <ChartEmpty label={emptyLabel} />
 
   return (
     <div className="flex flex-col">
@@ -62,7 +77,6 @@ export default function PieDonut({ data }) {
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Legenda */}
       <ul className="space-y-2 mt-1">
         {data.map((item, i) => (
           <li key={i} className="flex items-center justify-between">
