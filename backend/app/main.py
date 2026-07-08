@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import proposals, financial, webhooks, files, technical, dashboard, integrations
+from app.routers import proposals, financial, webhooks, files, technical, dashboard, integrations, projects
 
 app = FastAPI(
     title="InfraReport API",
@@ -23,6 +23,7 @@ app.include_router(files.router)
 app.include_router(technical.router)
 app.include_router(dashboard.router)
 app.include_router(integrations.router)
+app.include_router(projects.router)
 
 
 @app.get("/")

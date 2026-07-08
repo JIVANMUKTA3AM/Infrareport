@@ -9,10 +9,11 @@ import Configuracoes  from './pages/Configuracoes'
 import Login           from './pages/Login'
 import InfraReportLanding from './pages/InfraReportLanding'
 import SetNewPassword  from './pages/SetNewPassword'
-import AgenteComercial from './pages/AgenteComercial'
-import Placeholder  from './pages/Placeholder'
-import Propostas      from './pages/Propostas'
-import AgenteFinanceiro from './pages/AgenteFinanceiro'
+import AgenteComercial   from './pages/AgenteComercial'
+import Placeholder       from './pages/Placeholder'
+import Propostas         from './pages/Propostas'
+import Projetos          from './pages/Projetos'
+import AgenteFinanceiro  from './pages/AgenteFinanceiro'
 import { Loader2 }  from 'lucide-react'
 
 const PAGE_LABELS = {
@@ -36,7 +37,8 @@ function PageContent({ page }) {
   if (page === 'arquivos')       return <Files />
   if (page === 'agente-tecnico')  return <AgenteTecnico />
   if (page === 'configuracoes')   return <Configuracoes />
-  if (page === 'propostas')       return <Propostas />
+  if (page === 'propostas')         return <Propostas />
+  if (page === 'projetos')          return <Projetos />
   if (page === 'agente-financeiro') return <AgenteFinanceiro />
   if (page === 'agente-comercial')  return <AgenteComercial />
   return <Placeholder title={PAGE_LABELS[page] || page} />

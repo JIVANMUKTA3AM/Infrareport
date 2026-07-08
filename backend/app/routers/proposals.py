@@ -1,4 +1,6 @@
+import json
 import os
+from datetime import date
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from typing import Optional
@@ -52,7 +54,7 @@ async def update_proposal_status(proposal_id: UUID, body: dict):
         email_sent = False
 
         if status == "aprovada":
-            docx_path = proposal.get("docx_url")  # campo armazena o caminho no disco
+            docx_path = proposal.get("docx_url")
             uid       = caller_user_id or str(proposal.get("user_id", ""))
             if docx_path and os.path.exists(docx_path):
                 try:
@@ -68,11 +70,59 @@ async def update_proposal_status(proposal_id: UUID, body: dict):
                 except Exception as exc:
                     print(f"[proposals] Falha ao enviar e-mail de aprovação: {exc}")
 
+            # Auto-cria Projeto/OS vinculado à proposta aprovada
+            _auto_create_project(db, proposal, uid)
+
         return {**proposal, "email_sent": email_sent}
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+def _auto_create_project(db, proposal: dict, user_id: str) -> None:
+    """Cria automaticamente um Projeto/OS quando uma proposta é aprovada."""
+    try:
+        # Verifica se já existe projeto vinculado a esta proposta
+        exists = (
+            db.table("projects")
+            .select("id")
+            .eq("proposal_id", proposal["id"])
+            .limit(1)
+            .execute()
+        )
+        if exists.data:
+            return  # já foi criado anteriormente
+
+        equipments = proposal.get("equipments") or []
+        if isinstance(equipments, str):
+            try:
+                equipments = json.loads(equipments)
+            except Exception:
+                equipments = []
+
+        scope_items = [e.get("description", "") for e in equipments if e.get("description")]
+        scope = f"Serviço: {proposal['service']}"
+        if scope_items:
+            scope += "\n\nItens:\n• " + "\n• ".join(scope_items)
+
+        project_name = f"OS – {proposal['service']} | {proposal['client_name']}"
+
+        db.table("projects").insert({
+            "user_id":     user_id,
+            "name":        project_name,
+            "client":      proposal["client_name"],
+            "revenue":     float(proposal.get("value") or 0),
+            "scope":       scope,
+            "segment":     proposal.get("segment"),
+            "proposal_id": proposal["id"],
+            "status":      "em_andamento",
+            "start_date":  date.today().isoformat(),
+            "team":        json.dumps([]),
+        }).execute()
+    except Exception as exc:
+        # Não interrompe o fluxo principal se o projeto falhar
+        print(f"[proposals] Falha ao auto-criar projeto: {exc}")
 
 
 @router.get("/{proposal_id}/download")
