@@ -14,6 +14,19 @@ from app.services.email_sender import send_proposal_email
 router = APIRouter(prefix="/api/proposals", tags=["proposals"])
 
 
+def _normalize_proposal(row: dict) -> dict:
+    """Garante que campos JSON/array sejam sempre listas — nunca strings."""
+    eq = row.get("equipments")
+    if isinstance(eq, str):
+        try:
+            row["equipments"] = json.loads(eq)
+        except Exception:
+            row["equipments"] = []
+    elif not isinstance(eq, list):
+        row["equipments"] = []
+    return row
+
+
 @router.get("")
 async def list_proposals(
     user_id: UUID = Query(..., description="ID do usuário"),
@@ -25,7 +38,42 @@ async def list_proposals(
         if status:
             q = q.eq("status", status)
         result = q.execute()
-        return result.data
+        return [_normalize_proposal(row) for row in (result.data or [])]
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("")
+async def create_proposal_manual(body: dict):
+    """Cria proposta manualmente (sem IA)."""
+    user_id = body.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=422, detail="user_id obrigatório")
+    if not body.get("client_name"):
+        raise HTTPException(status_code=422, detail="client_name obrigatório")
+    if not body.get("service"):
+        raise HTTPException(status_code=422, detail="service obrigatório")
+
+    row = {
+        "user_id":      str(user_id),
+        "client_name":  body["client_name"],
+        "client_email": body.get("client_email", ""),
+        "client_phone": body.get("client_phone", ""),
+        "service":      body["service"],
+        "value":        float(body.get("value") or 0),
+        "notes":        body.get("notes", ""),
+        "status":       body.get("status", "pendente"),
+        "segment":      body.get("segment", ""),
+        "equipments":   json.dumps(body.get("equipments", [])),
+    }
+    try:
+        db = get_supabase()
+        result = db.table("proposals").insert(row).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Falha ao criar proposta")
+        return _normalize_proposal(result.data[0])
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

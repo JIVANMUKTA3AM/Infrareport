@@ -1,12 +1,25 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Eye, Download, CheckCircle, XCircle, Search, RefreshCw, Mail } from 'lucide-react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { Eye, Download, CheckCircle, XCircle, Search, RefreshCw, Mail, ChevronDown, Plus, Bot } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 function formatBRL(value) {
   return `R$ ${Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 }
+
+/** Garante que `v` seja sempre um array, mesmo se vier como JSON string do backend. */
+function safeArr(v) {
+  if (Array.isArray(v)) return v
+  if (typeof v === 'string' && v) {
+    try { return JSON.parse(v) } catch { return [] }
+  }
+  return []
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
   const s = status?.toLowerCase()
@@ -27,10 +40,10 @@ function StatusBadge({ status }) {
 
 function ActionButton({ icon: Icon, label, onClick, color = 'slate' }) {
   const colors = {
-    slate: 'hover:bg-slate-100 hover:text-slate-800 text-slate-500 border-slate-200',
+    slate:   'hover:bg-slate-100 hover:text-slate-800 text-slate-500 border-slate-200',
     emerald: 'hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-emerald-600 border-emerald-200',
-    red: 'hover:bg-red-50 hover:text-red-700 hover:border-red-300 text-red-600 border-red-200',
-    blue: 'hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-blue-600 border-blue-200'
+    red:     'hover:bg-red-50 hover:text-red-700 hover:border-red-300 text-red-600 border-red-200',
+    blue:    'hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-blue-600 border-blue-200',
   }
   return (
     <button
@@ -55,6 +68,191 @@ function downloadProposal(id, ext) {
   a.remove()
 }
 
+// ── Nova Proposta — split button ──────────────────────────────────────────────
+
+function NewProposalButton({ onManual }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative flex items-stretch">
+      {/* primary action */}
+      <button
+        onClick={() => { window.location.hash = '#agente-comercial' }}
+        className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white text-[0.75rem] font-bold rounded-l-lg shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-colors"
+      >
+        <Bot size={13} /> Via Agente IA
+      </button>
+      {/* dropdown trigger */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="px-2 py-1.5 bg-blue-700 text-white rounded-r-lg border-l border-blue-500/40 hover:bg-blue-800 transition-colors"
+        aria-label="Mais opções"
+      >
+        <ChevronDown size={12} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden">
+          <button
+            onClick={() => { setOpen(false); window.location.hash = '#agente-comercial' }}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[0.8rem] text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+          >
+            <Bot size={14} /> Gerar com IA
+          </button>
+          <button
+            onClick={() => { setOpen(false); onManual() }}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[0.8rem] text-slate-700 hover:bg-slate-50 transition-colors border-t border-slate-100"
+          >
+            <Plus size={14} /> Formulário manual
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Formulário manual rápido ──────────────────────────────────────────────────
+
+const SEGMENTS = [
+  { value: '', label: 'Selecione o segmento' },
+  { value: 'ac', label: '❄️ Ar-Condicionado' },
+  { value: 'cftv', label: '📷 CFTV / Segurança' },
+  { value: 'ti', label: '🖥️ TI / Redes' },
+  { value: 'eletrica', label: '⚡ Elétrica' },
+  { value: 'hidraulica', label: '🔧 Hidráulica' },
+  { value: 'outro', label: '📋 Outro' },
+]
+
+const EMPTY_FORM = {
+  client_name: '', client_email: '', client_phone: '',
+  service: '', segment: '', value: '', notes: '', status: 'pendente',
+}
+
+function QuickProposalModal({ userId, onClose, onCreated }) {
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.client_name.trim()) { setError('Nome do cliente obrigatório.'); return }
+    if (!form.service.trim()) { setError('Descrição do serviço obrigatória.'); return }
+
+    setSaving(true); setError('')
+    try {
+      const res = await fetch(`${API_BASE}/api/proposals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, user_id: userId, value: parseFloat(form.value) || 0 }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.detail || `Erro ${res.status}`)
+      }
+      const created = await res.json()
+      onCreated(created)
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const iStyle = 'w-full px-3 py-2 text-[0.82rem] border border-slate-200 rounded-lg outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all'
+  const lStyle = 'block text-[0.68rem] font-bold uppercase tracking-wider text-slate-400 mb-1'
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <div>
+            <h3 className="font-bold text-slate-800 text-base">Nova Proposta Manual</h3>
+            <p className="text-[0.75rem] text-slate-400 mt-0.5">Preencha os dados principais; edite os itens depois.</p>
+          </div>
+          <button onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className={lStyle}>Cliente *</label>
+              <input className={iStyle} placeholder="Nome do cliente ou empresa"
+                value={form.client_name} onChange={set('client_name')} />
+            </div>
+            <div>
+              <label className={lStyle}>E-mail</label>
+              <input className={iStyle} type="email" placeholder="cliente@email.com"
+                value={form.client_email} onChange={set('client_email')} />
+            </div>
+            <div>
+              <label className={lStyle}>Telefone</label>
+              <input className={iStyle} placeholder="(11) 99999-9999"
+                value={form.client_phone} onChange={set('client_phone')} />
+            </div>
+            <div className="col-span-2">
+              <label className={lStyle}>Descrição do serviço *</label>
+              <input className={iStyle} placeholder="Ex: Instalação de 8 câmeras CFTV no galpão"
+                value={form.service} onChange={set('service')} />
+            </div>
+            <div>
+              <label className={lStyle}>Segmento</label>
+              <select className={iStyle} value={form.segment} onChange={set('segment')}>
+                {SEGMENTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lStyle}>Valor total (R$)</label>
+              <input className={iStyle} type="number" min="0" step="0.01" placeholder="0,00"
+                value={form.value} onChange={set('value')} />
+            </div>
+            <div>
+              <label className={lStyle}>Status inicial</label>
+              <select className={iStyle} value={form.status} onChange={set('status')}>
+                <option value="pendente">Pendente</option>
+                <option value="enviada">Enviada</option>
+                <option value="aprovada">Aprovada</option>
+              </select>
+            </div>
+            <div>
+              <label className={lStyle}>Observações</label>
+              <input className={iStyle} placeholder="Condições especiais, prazo..."
+                value={form.notes} onChange={set('notes')} />
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-[0.8rem] text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="px-4 py-2 text-[0.8rem] font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[0.82rem] font-bold rounded-lg shadow-md shadow-blue-600/20 transition-colors disabled:opacity-60">
+              {saving ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={13} />}
+              {saving ? 'Salvando...' : 'Criar Proposta'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function Propostas() {
   const { user } = useAuth()
   const userId = user?.id
@@ -65,7 +263,8 @@ export default function Propostas() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedProp, setSelectedProp] = useState(null)
-  const [toast, setToast] = useState(null) // { msg, type: 'success'|'error' }
+  const [toast, setToast] = useState(null)
+  const [showManual, setShowManual] = useState(false)
 
   const fetchPropostas = useCallback(async () => {
     if (!userId) return
@@ -95,16 +294,21 @@ export default function Propostas() {
   }, [propostas, filter, search])
 
   const kpis = useMemo(() => {
-    const total = propostas.length
+    const total     = propostas.length
     const aprovadas = propostas.filter(p => p.status === 'aprovada').length
     const pendentes = propostas.filter(p => p.status === 'pendente' || p.status === 'draft').length
-    const valor = propostas.reduce((acc, p) => acc + (p.value || p.total_value || 0), 0)
+    const valor     = propostas.reduce((acc, p) => acc + (p.value || p.total_value || 0), 0)
     return { total, aprovadas, pendentes, valor }
   }, [propostas])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 4000)
+  }
+
+  /** Abre o modal normalizando campos que podem vir como JSON string do backend. */
+  const openDetail = (p) => {
+    setSelectedProp({ ...p, equipments: safeArr(p.equipments) })
   }
 
   const handleApprove = async (id) => {
@@ -117,6 +321,7 @@ export default function Propostas() {
       if (!res.ok) throw new Error(`Erro ${res.status}`)
       const data = await res.json()
       setPropostas(prev => prev.map(p => p.id === id ? { ...p, status: 'aprovada' } : p))
+      if (selectedProp?.id === id) setSelectedProp(prev => prev ? { ...prev, status: 'aprovada' } : null)
       if (data.email_sent) {
         showToast('Proposta aprovada e e-mail enviado ao cliente!')
       } else {
@@ -136,10 +341,16 @@ export default function Propostas() {
       })
       if (!res.ok) throw new Error(`Erro ${res.status}`)
       setPropostas(prev => prev.map(p => p.id === id ? { ...p, status: 'rejeitada' } : p))
+      if (selectedProp?.id === id) setSelectedProp(prev => prev ? { ...prev, status: 'rejeitada' } : null)
       showToast('Proposta marcada como rejeitada.', 'warn')
     } catch (err) {
       showToast(`Erro ao rejeitar: ${err.message}`, 'error')
     }
+  }
+
+  const handleCreated = (newProp) => {
+    setPropostas(prev => [newProp, ...prev])
+    showToast('Proposta criada com sucesso!')
   }
 
   return (
@@ -157,6 +368,15 @@ export default function Propostas() {
           {toast.type === 'error'   && <XCircle size={15} />}
           {toast.msg}
         </div>
+      )}
+
+      {/* ── Formulário manual ─────────────────────────────────────────────── */}
+      {showManual && (
+        <QuickProposalModal
+          userId={userId}
+          onClose={() => setShowManual(false)}
+          onCreated={handleCreated}
+        />
       )}
 
       {/* KPIs */}
@@ -216,12 +436,7 @@ export default function Propostas() {
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             </button>
 
-            <button
-              onClick={() => { window.location.hash = '#agente-comercial' }}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[0.75rem] font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-colors"
-            >
-              Nova Proposta
-            </button>
+            <NewProposalButton onManual={() => setShowManual(true)} />
           </div>
         </div>
 
@@ -294,7 +509,7 @@ export default function Propostas() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <ActionButton icon={Eye} label="Ver" onClick={() => setSelectedProp(p)} />
+                          <ActionButton icon={Eye} label="Ver" onClick={() => openDetail(p)} />
                           <ActionButton icon={Download} label=".docx" onClick={() => downloadProposal(p.id, 'docx')} color="blue" />
 
                           {(s === 'pendente' || s === 'draft' || s === 'enviada') && (
@@ -338,7 +553,7 @@ export default function Propostas() {
               </div>
               <div>
                 <div className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400 mb-1">E-mail</div>
-                <div className="font-medium text-slate-800 text-[0.85rem]">{selectedProp.client_email}</div>
+                <div className="font-medium text-slate-800 text-[0.85rem]">{selectedProp.client_email || '—'}</div>
               </div>
               <div>
                 <div className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400 mb-1">Status</div>
@@ -364,20 +579,30 @@ export default function Propostas() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {selectedProp.equipments?.length > 0 ? selectedProp.equipments.map((eq, i) => (
-                        <tr key={i}>
-                          <td className="px-4 py-2.5 text-slate-700">{eq.description}</td>
-                          <td className="px-4 py-2.5 text-slate-600 font-medium">{eq.quantity}</td>
-                          <td className="px-4 py-2.5 text-slate-600">{formatBRL(eq.unit_price)}</td>
-                          <td className="px-4 py-2.5 text-slate-800 font-medium">{formatBRL(eq.quantity * eq.unit_price)}</td>
-                        </tr>
-                      )) : (
-                        <tr><td colSpan={4} className="px-4 py-3 text-center text-slate-400">Nenhum equipamento listado.</td></tr>
-                      )}
+                      {safeArr(selectedProp.equipments).length > 0
+                        ? safeArr(selectedProp.equipments).map((eq, i) => (
+                          <tr key={i}>
+                            <td className="px-4 py-2.5 text-slate-700">{eq.description}</td>
+                            <td className="px-4 py-2.5 text-slate-600 font-medium">{eq.quantity}</td>
+                            <td className="px-4 py-2.5 text-slate-600">{formatBRL(eq.unit_price)}</td>
+                            <td className="px-4 py-2.5 text-slate-800 font-medium">{formatBRL(eq.quantity * eq.unit_price)}</td>
+                          </tr>
+                        ))
+                        : (
+                          <tr><td colSpan={4} className="px-4 py-3 text-center text-slate-400">Nenhum item listado.</td></tr>
+                        )
+                      }
                     </tbody>
                   </table>
                 </div>
               </div>
+
+              {selectedProp.notes && (
+                <div className="col-span-2">
+                  <div className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400 mb-1">Observações</div>
+                  <p className="text-[0.82rem] text-slate-600">{selectedProp.notes}</p>
+                </div>
+              )}
             </div>
 
             <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-white">

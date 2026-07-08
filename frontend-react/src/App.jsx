@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Component } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Sidebar      from './components/layout/Sidebar'
 import Topbar       from './components/layout/Topbar'
@@ -19,7 +19,51 @@ import Saidas            from './pages/Saidas'
 import Categorias        from './pages/Categorias'
 import AgenteFinanceiro  from './pages/AgenteFinanceiro'
 import Relatorios        from './pages/Relatorios'
-import { Loader2 }  from 'lucide-react'
+import { Loader2, AlertTriangle, RefreshCw }  from 'lucide-react'
+
+// ── Error Boundary ────────────────────────────────────────────────────────────
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[ErrorBoundary]', error, info?.componentStack)
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 p-8">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center">
+            <AlertTriangle size={26} className="text-red-500" />
+          </div>
+          <div className="text-center max-w-sm">
+            <h2 className="font-bold text-slate-800 text-lg mb-1">Ocorreu um erro nesta tela</h2>
+            <p className="text-[0.82rem] text-slate-500 mb-1">
+              {this.state.error?.message || 'Erro inesperado de renderização.'}
+            </p>
+            <p className="text-[0.75rem] text-slate-400">
+              As outras telas continuam funcionando normalmente.
+            </p>
+          </div>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[0.82rem] font-bold rounded-lg transition-colors"
+          >
+            <RefreshCw size={14} /> Tentar novamente
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const PAGE_LABELS = {
   propostas:           'Propostas Comerciais',
@@ -123,7 +167,9 @@ function AuthenticatedApp() {
         <Topbar page={page} onRefresh={() => navigate(page)} user={user} />
 
         <main className="flex-1">
-          <PageContent page={page} />
+          <ErrorBoundary key={page}>
+            <PageContent page={page} />
+          </ErrorBoundary>
         </main>
       </div>
     </div>
