@@ -92,7 +92,7 @@ function EntryModal({ initial, userId, categories, onClose, onSaved, onDeleted }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!r.ok) { let msg = 'Erro ao salvar'; try { const e = await r.json(); msg = e.detail || msg } catch {} throw new Error(msg) }
+      if (!r.ok) { let msg = `Erro ${r.status}`; try { const e = await r.json(); msg = e.detail || msg } catch {} throw new Error(msg) }
       const saved = await r.json()
       onSaved(saved, isEdit)
     } catch (err) {
