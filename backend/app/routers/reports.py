@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.config import get_settings
-from app.database import get_db
+from app.database import get_supabase
 from app.services.file_storage import register_file
 from app.services.reports_generator import (
     pdf_financeiro, pdf_projetos, pdf_propostas,
@@ -55,7 +55,7 @@ class PropostasRequest(BaseModel):
 
 @router.post("/financeiro")
 async def generate_financeiro(body: FinanceiroRequest):
-    db  = get_db()
+    db  = get_supabase()
     uid = str(body.user_id)
 
     q = db.table("financial_entries").select("*").eq("user_id", uid)
@@ -102,7 +102,7 @@ async def generate_financeiro(body: FinanceiroRequest):
 
 @router.post("/projetos")
 async def generate_projetos(body: ProjetosRequest):
-    db  = get_db()
+    db  = get_supabase()
     uid = str(body.user_id)
 
     q = db.table("projects").select("*").eq("user_id", uid)
@@ -139,7 +139,7 @@ async def generate_projetos(body: ProjetosRequest):
 
 @router.post("/propostas")
 async def generate_propostas(body: PropostasRequest):
-    db  = get_db()
+    db  = get_supabase()
     uid = str(body.user_id)
 
     q = db.table("proposals").select("*").eq("user_id", uid)
