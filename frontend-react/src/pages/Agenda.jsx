@@ -118,7 +118,7 @@ function EventModal({ initial, userId, onClose, onSaved, onDeleted }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, user_id: userId }),
       })
-      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Erro'); }
+      if (!r.ok) { let msg = 'Erro ao salvar'; try { const e = await r.json(); msg = e.detail || msg } catch {} throw new Error(msg) }
       const saved = await r.json()
       if (pushGcal) {
         await fetch(`${API}/api/events/${saved.id}/gcal-push`, {

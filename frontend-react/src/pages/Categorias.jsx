@@ -43,7 +43,7 @@ function CategoryModal({ initial, type, userId, onClose, onSaved }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Erro ao salvar') }
+      if (!r.ok) { let msg = 'Erro ao salvar'; try { const e = await r.json(); msg = e.detail || msg } catch {} throw new Error(msg) }
       onSaved(await r.json(), isEdit)
     } catch (err) {
       setError(err.message)
@@ -146,7 +146,7 @@ function DeleteDialog({ cat, allCats, userId, onClose, onDeleted }) {
     setWorking(true); setError('')
     try {
       const r = await fetch(`${API}/api/categories/${cat.id}?user_id=${userId}`, { method: 'DELETE' })
-      if (!r.ok) { const e = await r.json(); throw new Error(e.detail?.message || e.detail || 'Erro') }
+      if (!r.ok) { let msg = 'Erro ao excluir'; try { const e = await r.json(); msg = e.detail?.message || e.detail || msg } catch {} throw new Error(msg) }
       onDeleted(cat.id)
     } catch (err) { setError(err.message) }
     finally { setWorking(false) }
@@ -161,7 +161,7 @@ function DeleteDialog({ cat, allCats, userId, onClose, onDeleted }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, target_id: mergeTarget }),
       })
-      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Erro') }
+      if (!r.ok) { let msg = 'Erro ao mesclar'; try { const e = await r.json(); msg = e.detail || msg } catch {} throw new Error(msg) }
       onDeleted(cat.id)
     } catch (err) { setError(err.message) }
     finally { setWorking(false) }
