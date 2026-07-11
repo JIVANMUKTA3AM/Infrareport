@@ -8,7 +8,9 @@ services:
     # Sem porta exposta externamente — acessado apenas pela API na rede interna
 
   api:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: infrareport_api
     env_file:
       - ./backend/.env
