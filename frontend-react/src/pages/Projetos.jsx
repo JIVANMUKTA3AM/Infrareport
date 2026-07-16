@@ -7,7 +7,7 @@ import {
   Paperclip, Wrench, AlertCircle,
 } from 'lucide-react'
 
-const API = ''
+const API = 'https://api.infrareport.3amgflowz.com.br'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 

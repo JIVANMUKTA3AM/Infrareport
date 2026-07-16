@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API = ''
+const API = 'https://api.infrareport.3amgflowz.com.br'
 
 export function useNotifications(userId) {
   const [notifications, setNotifications] = useState({ count: 0, items: [] })

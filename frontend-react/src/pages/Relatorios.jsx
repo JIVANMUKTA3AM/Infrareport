@@ -7,8 +7,9 @@ import {
 } from 'lucide-react'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+const BASE = 'https://api.infrareport.3amgflowz.com.br'
 const API = (path, body) =>
-  fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  fetch(`${BASE}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
 const fmt = (bytes) => {
   if (bytes < 1024) return `${bytes} B`

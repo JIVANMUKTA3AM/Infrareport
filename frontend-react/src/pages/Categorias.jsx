@@ -5,7 +5,7 @@ import {
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle2,
 } from 'lucide-react'
 
-const API = ''
+const API = 'https://api.infrareport.3amgflowz.com.br'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const hex15 = (hex) => hex + '26'   // ~15% opacity suffix
