@@ -6,7 +6,7 @@ import {
   ExternalLink, Trash2, RefreshCw, Shield,
 } from 'lucide-react'
 
-const API = import.meta.env.VITE_API_URL || 'https://api.infrareport.3amgflowz.com.br'
+const API = import.meta.env.VITE_API_URL || ''
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function authHeaders(session) {

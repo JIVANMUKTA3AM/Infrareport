@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API = 'https://api.infrareport.3amgflowz.com.br'
+const API = ''
 
 export function useCategories(userId, type = null) {
   const [categories, setCategories] = useState([])

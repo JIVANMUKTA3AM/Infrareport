@@ -11,7 +11,7 @@ import {
   MessageSquarePlus, Calendar,
 } from 'lucide-react'
 
-const API = 'https://api.infrareport.3amgflowz.com.br'
+const API = ''
 
 const EVENT_TYPE_COLORS = {
   visita:     { color: '#2563EB', emoji: '🔍' },

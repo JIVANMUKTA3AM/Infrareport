@@ -6,7 +6,7 @@ import {
   TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, ExternalLink,
 } from 'lucide-react'
 
-const API = 'https://api.infrareport.3amgflowz.com.br'
+const API = ''
 
 const MONTHS_PT    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']

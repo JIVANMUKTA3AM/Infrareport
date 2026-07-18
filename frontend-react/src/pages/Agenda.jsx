@@ -5,7 +5,7 @@ import {
   MapPin, RefreshCw, Calendar,
 } from 'lucide-react'
 
-const API = 'https://api.infrareport.3amgflowz.com.br'
+const API = ''
 
 const EVENT_TYPES = {
   visita:     { label: 'Visita Técnica',  color: '#2563EB', bg: '#DBEAFE', emoji: '🔍' },
