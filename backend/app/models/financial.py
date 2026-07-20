@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
-from datetime import date
+from datetime import date as DateType
 
 
 class FinancialMessageRequest(BaseModel):
@@ -26,7 +26,7 @@ class EntryCreate(BaseModel):
     value: float
     category: str = "outro"
     description: str = ""
-    date: Optional[date] = None   # defaults to today on the backend
+    date: Optional[DateType] = None   # defaults to today on the backend
     payment_method: str = "pix"
     project_id: Optional[UUID] = None
     attachment_url: Optional[str] = None
